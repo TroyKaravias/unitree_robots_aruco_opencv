@@ -5,16 +5,16 @@ Streams MJPEG over HTTP with ArUco detection overlay and a scan log panel.
 Markers 0-9 trigger G1 robot commands via the LocoClient.
 
 Marker mapping:
-  ID 0 — Zero torque (all motors off)
-  ID 1 — Damping (safe compliant stop)
-  ID 2 — High stand (locked upright)
-  ID 3 — Running mode (squat-to-stand, ready to walk)
-  ID 4 — Wave hand (stationary)
-  ID 5 — Wave hand + turn around
-  ID 6 — Shake hand
-  ID 7 — Balance stand
-  ID 8 — Low stand
-  ID 9 — Sit
+  ID 0 — Zero torque (all motors off — robot collapses, use only from the floor)
+  ID 1 — Damping (safe compliant rest — scan this first)
+  ID 2 — Locked standing FSM 500 (stand-up sequence ~8 seconds, 15s cooldown)
+  ID 3 — Walking/running mode (enables continuous gait from FSM 500)
+  ID 4 — Wave above head (arm action 26, requires FSM 500)
+  ID 5 — Blow kiss (arm action 11, requires FSM 500)
+  ID 6 — Shake hand (arm action 27, requires FSM 500)
+  ID 7 — Both hands up (arm action 15, requires FSM 500)
+  ID 8 — Right hand on heart (arm action 33, requires FSM 500)
+  ID 9 — Ultraman ray (arm action 24, requires FSM 500)
 
 Usage (on G1 Jetson, run via SSH):
   python3 g1_camera_view.py --headless --stream-port 8080

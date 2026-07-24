@@ -1,30 +1,40 @@
 #!/usr/bin/env python3
 """
-G1 ArUco Gesture Responder
-===========================
-Stationary ArUco scanner for the Unitree G1 humanoid.
-The robot does NOT move — it stands still, watches for ArUco markers
-via the Intel RealSense D435i, and performs arm gestures when a marker
-is confirmed. No patrol, no obstacle avoidance.
+G1 ArUco Gesture Responder  [OLDER EXPERIMENTAL SCRIPT — WebRTC approach]
+==========================================================================
+NOTE: This script uses WebRTC + DDS arm-gesture API (api_id 7106) to send
+arm gestures to the G1.  It was an earlier approach and is NOT the deployed
+system.
 
-Marker mapping (customize freely):
+The current working G1 scanner is:
+  scripts/g1/g1_camera_view.py
+
+That script uses:
+  - V4L2 direct camera access on the Jetson (no WebRTC)
+  - MJPEG browser stream at http://192.168.123.164:8080/
+  - g1_loco_client binary for locomotion FSM transitions
+  - g1_arm_action_example binary for built-in arm gestures
+  - Marker IDs 0–9 fully mapped and confirmed working
+
+Deployed marker mapping (g1_camera_view.py — NOT this file):
+  ID 0  — Zero torque (motors off, robot collapses)
+  ID 1  — Damping (safe rest)
+  ID 2  — Locked standing FSM 500 (~8 second stand-up sequence)
+  ID 3  — Walking/running mode (continuous gait)
+  ID 4  — Wave above head (arm action 26)
+  ID 5  — Blow kiss (arm action 11)
+  ID 6  — Shake hand (arm action 27)
+  ID 7  — Both hands up (arm action 15)
+  ID 8  — Right hand on heart (arm action 33)
+  ID 9  — Ultraman ray (arm action 24)
+
+This file's WebRTC arm gesture mapping (experimental, not deployed):
   ID 1  — High wave
   ID 2  — Handshake
   ID 3  — High five
   ID 4  — Hug
   ID 6  — Clap
   ID 7  — Face wave
-
-Environment variables:
-  UNITREE_ROBOT_IP    G1 robot body IP (default: 192.168.123.161)
-  UNITREE_AES_128_KEY 32-hex AES key for firmware >= 1.5.1 (optional)
-  G1_CAMERA_DEVICE    V4L2 device path (default: /dev/video4)
-  STREAM_PORT         MJPEG stream port (default: 8080)
-  HEADLESS            Force headless=1 or headless=0
-
-Run (on G1 Jetson):
-  nohup env PYTHONPATH=/home/unitree/unitree_webrtc_connect \\
-    python3 -u /home/unitree/g1_aruco_autonomous.py >> /tmp/g1_scan.log 2>&1 &
 """
 
 import asyncio
@@ -56,6 +66,9 @@ G1_ARM_HUG           = 19
 G1_ARM_CLAP          = 17
 G1_ARM_FACE_WAVE     = 25
 
+# NOTE: These IDs and gesture names belong to this experimental script only.
+# The deployed system (g1_camera_view.py) uses a completely different approach
+# with the g1_arm_action_example binary and marker IDs 0-9.
 MARKER_LABELS = {
     1: ("High wave",  G1_ARM_HIGH_WAVE),
     2: ("Handshake",  G1_ARM_HANDSHAKE),
