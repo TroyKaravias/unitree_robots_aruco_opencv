@@ -40,47 +40,41 @@ _HTML_PAGE = b"""<!doctype html>
   <title>Go2 Patrol</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #000; display: flex; flex-direction: column; height: 100vh; font-family: sans-serif; position: relative; }
-    #feed { flex: 1; object-fit: contain; width: 100%; }
-    #bar {
-      display: flex; align-items: center; gap: 12px;
-      padding: 8px 14px; background: #111; border-top: 1px solid #333;
-    }
-    button {
-      border: none; border-radius: 6px; padding: 8px 20px;
-      font-size: 15px; font-weight: bold; cursor: pointer; color: #fff;
-    }
-    #startBtn { background: #2ea043; }
-    #stopBtn  { background: #da3633; }
-    button:disabled { opacity: 0.4; cursor: default; }
-    #status { color: #aaa; font-family: monospace; font-size: 13px; }
-    #logPanel {
-      position: absolute; top: 10px; right: 10px;
-      width: 520px; max-height: 520px;
-      background: rgba(0,0,0,0.75); border: 1px solid #333; border-radius: 8px;
-      display: flex; flex-direction: column; overflow: hidden;
-    }
-    #logTitle {
-      padding: 5px 10px; font-size: 11px; font-weight: bold;
-      color: #7eb8f7; background: rgba(0,0,0,0.5); border-bottom: 1px solid #333;
-      letter-spacing: 0.06em; text-transform: uppercase;
-    }
-    #logLines {
-      flex: 1; overflow-y: auto; padding: 6px 8px;
-      font-family: monospace; font-size: 12px; color: #cce; line-height: 1.6;
-    }
-    #logLines div { border-bottom: 1px solid #1a1a2a; padding: 1px 0; }
+    html, body { height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
+    body { display: flex; flex-direction: column; }
+    #main { display: flex; flex: 1; min-height: 0; overflow: hidden; }
+    #feedWrap { flex: 1; display: flex; align-items: center; justify-content: center;
+                background: #000; overflow: hidden; min-width: 0; }
+    #feed { width: 100%; height: 100%; object-fit: contain; display: block; }
+    #logPanel { width: 340px; flex-shrink: 0; display: flex; flex-direction: column;
+                background: #0a0a0f; border-left: 1px solid #2a2a3a; overflow: hidden; }
+    #logTitle { padding: 8px 12px; font-size: 11px; font-weight: bold;
+                color: #7eb8f7; background: #111; border-bottom: 1px solid #2a2a3a;
+                letter-spacing: 0.06em; text-transform: uppercase; flex-shrink: 0; }
+    #logLines { flex: 1; overflow-y: auto; padding: 6px 8px;
+                font-family: monospace; font-size: 12px; color: #cce; line-height: 1.65; }
+    #logLines div { border-bottom: 1px solid #14141e; padding: 2px 0; }
     #logLines div.confirmed { color: #5de88a; font-weight: bold; }
     #logLines div.seen { color: #aad4ff; }
     #logLines div.action { color: #f0c060; }
     #logLines div.info { color: #7eb8f7; }
+    #bar { display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+           padding: 8px 14px; background: #111; border-top: 1px solid #333; }
+    button { border: none; border-radius: 6px; padding: 8px 20px;
+             font-size: 15px; font-weight: bold; cursor: pointer; color: #fff; }
+    #startBtn { background: #2ea043; }
+    #stopBtn  { background: #da3633; }
+    button:disabled { opacity: 0.4; cursor: default; }
+    #status { color: #aaa; font-family: monospace; font-size: 13px; }
   </style>
 </head>
 <body>
-  <img id="feed" src="/stream">
-  <div id="logPanel">
-    <div id="logTitle">&#128269; ArUco Scan Log</div>
-    <div id="logLines"><div class="info">Waiting for detections...</div></div>
+  <div id="main">
+    <div id="feedWrap"><img id="feed" src="/stream"></div>
+    <div id="logPanel">
+      <div id="logTitle">&#128269; ArUco Scan Log</div>
+      <div id="logLines"><div class="info">Waiting for detections...</div></div>
+    </div>
   </div>
   <div id="bar">
     <button id="startBtn" onclick="startPatrol()">Start Patrol</button>
@@ -102,7 +96,7 @@ _HTML_PAGE = b"""<!doctype html>
         } else {
           start.disabled = false;
           stop.disabled  = true;
-          status.textContent = 'Standby \u2014 press Start to begin';
+          status.textContent = 'Standby &mdash; press Start to begin';
         }
       }).catch(() => {});
     }

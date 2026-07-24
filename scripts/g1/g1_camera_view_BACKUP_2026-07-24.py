@@ -41,91 +41,115 @@ import numpy as np
 # ── Config ────────────────────────────────────────────────────────────────────
 CONFIRM_COUNT = 3      # frames a marker must appear before "confirmed"
 COOLDOWN_SEC  = 4.0    # seconds before the same marker can be confirmed again
-COOLDOWN_LONG = 15.0   # longer cooldown for multi-step actions (marker 2)
 
 G1_NET_IFACE   = os.environ.get("G1_NET_IFACE", "enP8p1s0")
 G1_LOCO_BIN    = "/home/unitree/unitree_sdk2-main/build/bin/g1_loco_client"
 G1_DDS_URI     = "file:///home/unitree/cyclonedds_no_shm.xml"
+G1_SDK_PATH    = "/home/unitree/GR00T-WholeBodyControl/external_dependencies/unitree_sdk2_python"
+G1_GESTURE_DIR = "/home/unitree/hand_gestures"
 
 MARKER_ACTIONS = {
     0: "Zero torque",
     1: "Damping",
     2: "Locked standing",
     3: "Running mode",
-    4: "Wave above head",
-    5: "Blow kiss",
-    6: "Shake hand",
-    7: "Both hands up",
-    8: "Right hand on heart",
-    9: "Ultraman ray",
+    4: "Wave",
+    5: "Thumbs up",
+    6: "Peace sign",
+    7: "Fist",
+    8: "Point",
+    9: "Open hand",
 }
 
-# Built-in arm action IDs (g1_arm_action_example) — requires FSM 500/501
-_ARM_ACTION_IDS = {
-    4: 26,   # wave_above_head
-    5: 11,   # blow_kiss_with_both_hands
-    6: 27,   # shake_hand
-    7: 15,   # both_hands_up
-    8: 33,   # right_hand_on_heart
-    9: 24,   # ultraman_ray
+# hand gesture scripts (IDs 4-9) — run as subprocess
+_GESTURE_SCRIPTS = {
+    4: "06_wave.py",
+    5: "03_thumbs_up.py",
+    6: "02_peace.py",
+    7: "01_fist.py",
+    8: "04_point.py",
+    9: "00_open_hand.py",
 }
-
-G1_ARM_ACTION_BIN = "/home/unitree/unitree_sdk2-main/build/bin/g1_arm_action_example"
 
 # ── Shared state ──────────────────────────────────────────────────────────────
 _mjpeg_frame = None
 _mjpeg_lock  = threading.Lock()
 _log_queue: "Queue[str]" = Queue(maxsize=200)
-_action_lock = threading.Lock()  # only one loco action at a time
+
+# DDS publisher for walking commands (set up once in main)
+_wc_pub = None
+_dds_ready = False
 
 
 def _init_loco_client() -> bool:
-    """Verify the C++ loco binary is present."""
+    """Init loco binary check and DDS publisher for walking."""
+    global _wc_pub, _dds_ready
     if not os.path.isfile(G1_LOCO_BIN):
         print(f"[Loco] Binary not found: {G1_LOCO_BIN}")
-        _log_queue.put("info|Loco binary missing")
+        _log_queue.put(f"info|Loco binary missing")
         return False
-    print(f"[Loco] Ready — g1_loco_client on {G1_NET_IFACE}")
-    _log_queue.put("info|Loco ready")
+    try:
+        if G1_SDK_PATH not in sys.path:
+            sys.path.insert(0, G1_SDK_PATH)
+        from unitree_sdk2py.core.channel import ChannelFactoryInitialize, ChannelPublisher  # type: ignore
+        from unitree_sdk2py.idl.unitree_go.msg.dds_ import WirelessController_  # type: ignore
+        ChannelFactoryInitialize(0, G1_NET_IFACE)
+        _wc_pub = ChannelPublisher("rt/wirelesscontroller", WirelessController_)
+        _wc_pub.Init()
+        _dds_ready = True
+        print(f"[Loco] Ready — loco binary + DDS publisher on {G1_NET_IFACE}")
+        _log_queue.put("info|Loco + walking ready")
+    except Exception as e:
+        print(f"[Loco] DDS init failed (walking disabled): {e}")
+        _log_queue.put(f"info|Loco binary ready (no walking)")
     return True
 
 
 def _loco_call(*args: str) -> int:
-    """Run g1_loco_client via shell — fire and forget (non-blocking)."""
-    flags = " ".join(args)
-    cmd = (
-        f"CYCLONEDDS_URI={G1_DDS_URI} "
-        f"{G1_LOCO_BIN} --network_interface={G1_NET_IFACE} {flags}"
-        f" > /dev/null 2>&1"
-    )
+    """Run g1_loco_client with given flags, return exit code."""
+    cmd = [G1_LOCO_BIN, f"--network_interface={G1_NET_IFACE}"] + list(args)
+    env = os.environ.copy()
+    env["CYCLONEDDS_URI"] = G1_DDS_URI
     try:
-        proc = subprocess.Popen(
-            cmd,
-            shell=True,
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            start_new_session=True,
-        )
-        # Reap child in background to avoid zombie
-        threading.Thread(target=proc.wait, daemon=True).start()
-        print(f"[Loco] Spawned: {flags}", flush=True)
-        return 0
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10, env=env)
+        if result.stdout:
+            print(f"[Loco] {result.stdout.strip()}")
+        return result.returncode
+    except subprocess.TimeoutExpired:
+        print("[Loco] Command timed out")
+        return -1
     except Exception as e:
-        print(f"[Loco] Exception: {e}", flush=True)
+        print(f"[Loco] Exception: {e}")
         return -1
 
 
-
-def _run_loco_action(marker_id: int):
-    """Run in a background thread — only one action at a time."""
-    if not _action_lock.acquire(blocking=False):
-        print(f"[Action] Busy — ignoring ID {marker_id}")
+def _send_velocity(lx: float, ly: float, rx: float, duration: float):
+    """Publish velocity to rt/wirelesscontroller for given duration."""
+    if not _dds_ready or _wc_pub is None:
+        print("[Walk] DDS not ready")
         return
     try:
-        label = MARKER_ACTIONS.get(marker_id, f"ID {marker_id}")
-        print(f"[Action] Executing: {label}")
-        _log_queue.put(f"action|\u25b6 {label}")
+        from unitree_sdk2py.idl.unitree_go.msg.dds_ import WirelessController_  # type: ignore
+        msg = WirelessController_(lx=lx, ly=ly, rx=rx, ry=0.0, keys=0)
+        end = time.time() + duration
+        while time.time() < end:
+            _wc_pub.Write(msg)
+            time.sleep(0.05)
+        # send zero to stop
+        stop = WirelessController_(lx=0.0, ly=0.0, rx=0.0, ry=0.0, keys=0)
+        for _ in range(5):
+            _wc_pub.Write(stop)
+            time.sleep(0.05)
+    except Exception as e:
+        print(f"[Walk] Error: {e}")
+
+
+def _run_loco_action(marker_id: int):
+    """Run in a background thread."""
+    label = MARKER_ACTIONS.get(marker_id, f"ID {marker_id}")
+    print(f"[Action] Executing: {label}")
+    _log_queue.put(f"action|\u25b6 {label}")
+    try:
         if marker_id == 0:
             _loco_call("--zero_torque")
         elif marker_id == 1:
@@ -139,35 +163,25 @@ def _run_loco_action(marker_id: int):
         elif marker_id == 3:
             # enable continuous gait (running mode) — must already be in FSM 500
             _loco_call("--continous_gait=true")
-        elif marker_id in _ARM_ACTION_IDS:
-            action_id = _ARM_ACTION_IDS[marker_id]
-            cmd = (
-                f"CYCLONEDDS_URI={G1_DDS_URI} "
-                f"printf '{action_id}\\n' | "
-                f"timeout 15 {G1_ARM_ACTION_BIN} {G1_NET_IFACE}"
-                f" > /dev/null 2>&1"
+        elif marker_id in _GESTURE_SCRIPTS:
+            script = os.path.join(G1_GESTURE_DIR, _GESTURE_SCRIPTS[marker_id])
+            result = subprocess.run(
+                [sys.executable, script],
+                capture_output=True, text=True, timeout=30
             )
-            proc = subprocess.Popen(
-                cmd, shell=True,
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                start_new_session=True,
-            )
-            threading.Thread(target=proc.wait, daemon=True).start()
-            print(f"[Arm] Spawned action {action_id}", flush=True)
+            if result.stdout:
+                print(f"[Gesture] {result.stdout.strip()}")
+            if result.returncode != 0 and result.stderr:
+                print(f"[Gesture] Error: {result.stderr.strip()[:100]}")
         _log_queue.put("info|Done")
     except Exception as e:
         print(f"[Action] Error on ID {marker_id}: {e}")
         _log_queue.put(f"info|Error: {e}")
-    finally:
-        _action_lock.release()
 
 
 def handle_marker(mid: int, last_confirmed: dict):
     now = time.time()
-    cooldown = COOLDOWN_LONG if mid == 2 else COOLDOWN_SEC
-    if now - last_confirmed.get(mid, 0) < cooldown:
+    if now - last_confirmed.get(mid, 0) < COOLDOWN_SEC:
         return
     last_confirmed[mid] = now
     label = MARKER_ACTIONS.get(mid, f"ID {mid} (no action)")
@@ -345,17 +359,8 @@ def parse_args():
 
 
 def main():
-    import signal as _signal
-    _signal.signal(_signal.SIGPIPE, _signal.SIG_IGN)
-
     args = parse_args()
     use_gui = bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")) and not args.headless
-
-    # ── Release camera from RealSense ROS node if running ────────────────────
-    r = subprocess.run(["pkill", "-f", "realsense"], capture_output=True)
-    if r.returncode == 0:
-        print("[INFO] Killed realsense ROS node, waiting for camera release...")
-        time.sleep(3)
 
     # ── Camera ────────────────────────────────────────────────────────────────
     cap = _open_cap(args.device)
