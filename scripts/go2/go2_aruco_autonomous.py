@@ -24,13 +24,19 @@ _log_queue: "Queue[str]" = Queue(maxsize=200)
 # Unitree Go2 wireless remote key bitmask values.
 # Hold D-pad Down + A  to START autonomous patrol.
 # Hold D-pad Down + B  to STOP  autonomous patrol.
+# Hold D-pad Down + X  to RESTART the script (re-enables app access after).
+# Hold D-pad Down + Y  to KILL   the script entirely.
 # If your buttons don't respond, uncomment the debug print inside
 # _setup_controller_keybind() to discover the correct bitmask values.
 _CTRL_KEY_A         = 256    # A button
 _CTRL_KEY_B         = 512    # B button
+_CTRL_KEY_X         = 1024   # X button
+_CTRL_KEY_Y         = 2048   # Y button
 _CTRL_KEY_DPAD_DOWN = 16384  # D-pad Down
 _CTRL_COMBO_START   = _CTRL_KEY_DPAD_DOWN | _CTRL_KEY_A  # 16640 → Start patrol
 _CTRL_COMBO_STOP    = _CTRL_KEY_DPAD_DOWN | _CTRL_KEY_B  # 16896 → Stop  patrol
+_CTRL_COMBO_RESTART = _CTRL_KEY_DPAD_DOWN | _CTRL_KEY_X  # 16512 → Restart script
+_CTRL_COMBO_KILL    = _CTRL_KEY_DPAD_DOWN | _CTRL_KEY_Y  # 16448 → Kill script
 _ctrl_last_keys = 0
 
 _HTML_PAGE = b"""<!doctype html>
@@ -810,10 +816,22 @@ async def video_loop(conn):
 
             frame_queue.put(img)
 
-    conn.video.switchVideoChannel(True)
     conn.video.add_track_callback(recv_camera_stream)
+    conn.video.switchVideoChannel(True)
 
     print("Camera callback added. Waiting for frames...\n")
+
+    # Retry switchVideoChannel every 5s until the first frame arrives.
+    # The Go2 sometimes ignores the first "on" request; re-sending it
+    # consistently cuts the video start delay from 60s+ down to a few seconds.
+    async def _video_keepon():
+        for _ in range(12):  # max 12 retries = 60s
+            await asyncio.sleep(5)
+            if not frame_queue.empty():
+                break
+            conn.video.switchVideoChannel(True)
+
+    asyncio.ensure_future(_video_keepon())
 
     _prev_patrol_active = False  # track transitions so we can reset state on Start
 
@@ -990,12 +1008,27 @@ def _setup_controller_keybind(conn):
                                 set_led_color(conn, VUI_COLOR.GREEN)
                             )
 
+                        prev_restart = (prev & _CTRL_COMBO_RESTART) == _CTRL_COMBO_RESTART
+                        curr_restart = (keys & _CTRL_COMBO_RESTART) == _CTRL_COMBO_RESTART
+                        if curr_restart and not prev_restart:
+                            print("[Controller] D-pad Down + X → Restarting script...")
+                            # Exit cleanly — go2_patrol_monitor.sh will restart us
+                            os._exit(0)
+
+                        prev_kill = (prev & _CTRL_COMBO_KILL) == _CTRL_COMBO_KILL
+                        curr_kill = (keys & _CTRL_COMBO_KILL) == _CTRL_COMBO_KILL
+                        if curr_kill and not prev_kill:
+                            print("[Controller] D-pad Down + Y → Killing script.")
+                            # Write kill flag so the monitor waits instead of auto-restarting
+                            open("/tmp/patrol_killed", "w").close()
+                            os._exit(0)
+
             except Exception as e:
                 print(f"[Controller] Rosbridge error: {e} — retrying in 3s...")
                 await asyncio.sleep(3)
 
     asyncio.get_event_loop().create_task(_controller_loop())
-    print("Physical controller keybind active  —  D-pad Down+A = Start, D-pad Down+B = Stop")
+    print("Physical controller keybind active  —  D-pad Down+A = Start | D-pad Down+B = Stop | D-pad Down+X = Restart | D-pad Down+Y = Kill")
 
 
 async def main():

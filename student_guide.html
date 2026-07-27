@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Student Guide &mdash; Unitree Robots ArUco OpenCV</title>
+<style>
+:root {
+  --blue:#1f4e79; --blue2:#2f75b5; --light:#eef6fc; --border:#d7e3ee;
+  --text:#1f2933; --muted:#52606d; --warn:#fff7e6; --warn-border:#d97706;
+  --green:#e6f9ee; --green-border:#2ea043; --tip:#f3f0ff; --tip-border:#7c3aed;
+}
+* { box-sizing:border-box; }
+body { margin:0; font-family:Arial,Helvetica,sans-serif; line-height:1.6; color:var(--text); background:#f4f7fa; }
+.container { max-width:900px; margin:auto; background:white; padding:36px 28px 80px; }
+h1 { color:var(--blue); margin-bottom:.2rem; font-size:2rem; }
+h2 { color:var(--blue); border-top:2px solid var(--border); padding-top:1.2rem; margin-top:2.6rem; }
+h3 { color:var(--blue2); margin-bottom:.4rem; }
+h4 { margin:.8rem 0 .3rem; color:var(--text); }
+.subtitle { color:var(--muted); margin-bottom:1.4rem; }
+.note  { padding:13px 16px; border-radius:8px; margin:14px 0; background:var(--light);   border-left:5px solid var(--blue); }
+.warn  { padding:13px 16px; border-radius:8px; margin:14px 0; background:var(--warn);   border-left:5px solid var(--warn-border); }
+.tip   { padding:13px 16px; border-radius:8px; margin:14px 0; background:var(--tip);    border-left:5px solid var(--tip-border); }
+.ok    { padding:13px 16px; border-radius:8px; margin:14px 0; background:var(--green);  border-left:5px solid var(--green-border); }
+.step  { padding:16px 18px; border:1px solid var(--border); border-radius:10px; margin:18px 0; }
+.step-num { font-size:.75rem; font-weight:bold; color:var(--blue2); text-transform:uppercase; letter-spacing:.06em; }
+.code-title { font-weight:bold; margin-top:14px; font-size:.93rem; }
+.codebox { position:relative; margin:6px 0 14px; }
+pre { background:#111827; color:#f9fafb; padding:16px; border-radius:8px; overflow:auto; font-size:13.5px; white-space:pre-wrap; margin:0; }
+.codebox button { position:absolute; right:8px; top:8px; background:#374151; color:#fff; border:0; border-radius:6px; padding:5px 12px; font-size:12px; cursor:pointer; }
+.codebox button:hover { background:#4b5563; }
+table { border-collapse:collapse; width:100%; margin:12px 0; }
+th, td { border:1px solid var(--border); padding:9px 10px; text-align:left; }
+th { background:var(--light); font-weight:bold; }
+tr:nth-child(even) { background:#fafbfc; }
+.toc { columns:2; padding-left:1.2rem; }
+.toc li { margin:.3rem 0; break-inside:avoid; }
+.toc a { color:var(--blue); text-decoration:none; }
+.toc a:hover { text-decoration:underline; }
+.section { scroll-margin-top:16px; }
+li { margin:.4rem 0; }
+code { background:#f1f5f9; padding:1px 5px; border-radius:4px; font-size:.94em; }
+a { color:var(--blue); }
+@media (max-width:660px) { .toc { columns:1; } .container { padding:20px 14px 50px; } }
+@media print { .codebox button { display:none; } .container { max-width:none; padding:0; } }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Student Guide</h1>
+<p class="subtitle">Unitree Robots &mdash; ArUco + OpenCV<br>
+<strong>Everything you need to go from zero to a fully working robot &mdash; including deploying scripts to the onboard Jetsons.</strong><br>
+Repository: <a href="https://github.com/TroyKaravias/unitree_robots_aruco_opencv" target="_blank">github.com/TroyKaravias/unitree_robots_aruco_opencv</a></p>
+
+<div class="note">
+<strong>How to use this guide:</strong> Work through each section in order. Every code block has a
+<strong>Copy</strong> button &mdash; paste it directly into your terminal. When you see a
+<span style="color:var(--warn-border)">&#9888; Warning</span> box, read it before proceeding.
+When you see a <span style="color:#2ea043">&#10003; Check</span> box, verify the expected result before moving on.
+</div>
+
+<h2>Contents</h2>
+<ol class="toc">
+  <li><a href="#s1">Part 1 &mdash; What you&apos;re building</a></li>
+  <li><a href="#s2">Part 2 &mdash; Clone the repository (your laptop)</a></li>
+  <li><a href="#s3">Part 3 &mdash; Install dependencies (your laptop)</a></li>
+  <li><a href="#s4">Part 4 &mdash; Print your ArUco markers</a></li>
+  <li><a href="#s5">Part 5 &mdash; Go2: laptop WebRTC path</a></li>
+  <li><a href="#s6">Part 6 &mdash; Go2: onboard Jetson/PC2 deployment</a></li>
+  <li><a href="#s7">Part 7 &mdash; G1: deploy the scanner to the Jetson</a></li>
+  <li><a href="#s8">Part 8 &mdash; G1: start the scanner and open the stream</a></li>
+  <li><a href="#s9">Part 9 &mdash; G1: all 10 marker actions</a></li>
+  <li><a href="#s10">Part 10 &mdash; Troubleshooting</a></li>
+</ol>
+
+<!-- PART 1 -->
+<section class="section" id="s1">
+<h2>Part 1 &mdash; What you&apos;re building</h2>
+<p>This project gives a robot the ability to <strong>read a printed piece of paper and react to it</strong>. Here is how it works end-to-end:</p>
+<ol>
+  <li>You print <strong>ArUco markers</strong> &mdash; black-and-white square patterns, each with a unique ID number.</li>
+  <li>The robot&apos;s camera sees the marker in the frame.</li>
+  <li>OpenCV detects the marker and reads its ID.</li>
+  <li>Python maps that ID to a robot action (stand up, wave, walk, etc.).</li>
+  <li>The action command is sent to the robot.</li>
+</ol>
+<p>The same ArUco detection code works for both robots. Only the connection and command layers differ:</p>
+<table>
+  <tr><th>Robot</th><th>Camera source</th><th>Commands sent via</th><th>Script runs on</th><th>You watch via</th></tr>
+  <tr><td><strong>Go2</strong> (laptop path)</td><td>WebRTC stream to your laptop</td><td>WebRTC data channel</td><td>Your laptop</td><td>OpenCV window on laptop</td></tr>
+  <tr><td><strong>Go2</strong> (onboard path)</td><td>WebRTC stream</td><td>WebRTC data channel</td><td>Go2 Jetson/PC2</td><td>Browser at port 8080 &mdash; auto-starts on boot</td></tr>
+  <tr><td><strong>G1</strong> (humanoid)</td><td>RealSense D435i via V4L2 on Jetson</td><td>CycloneDDS binaries on Jetson</td><td>G1 Jetson NX</td><td>Browser at port 8080</td></tr>
+</table>
+<div class="note">
+The detection code (DICT_4X4_50, 3-frame confirmation, cooldowns) is <strong>identical</strong> for all paths. Only the connection and command layer changes per robot.
+</div>
+<h3>Two Go2 deployment paths</h3>
+<table>
+  <tr><th></th><th>Laptop / AP-mode path</th><th>Onboard Jetson/PC2 path</th></tr>
+  <tr><td>Connection</td><td>Laptop on Go2 Wi-Fi hotspot</td><td>Laptop Ethernet cable &rarr; Go2 internal network</td></tr>
+  <tr><td>Script location</td><td>Your laptop</td><td>Go2 Jetson (192.168.123.170)</td></tr>
+  <tr><td>Command routing</td><td>WebRTC data channel API</td><td>BotBrain ROS 2 &rarr; twist_mux</td></tr>
+  <tr><td>Status</td><td>Fully working &mdash; do this first</td><td>Fully working &mdash; auto-starts on boot, web UI at port 8080</td></tr>
+</table>
+</section>
+
+<!-- PART 2 -->
+<section class="section" id="s2">
+<h2>Part 2 &mdash; Clone the repository (your laptop)</h2>
+
+<div class="step">
+<div class="step-num">Step 1 &mdash; Create a projects folder</div>
+<div class="codebox"><button onclick="copyCode('c01',this)">Copy</button>
+<pre id="c01">cd ~
+mkdir -p projects
+cd projects</pre></div>
+</div>
+
+<div class="step">
+<div class="step-num">Step 2 &mdash; Clone the repository</div>
+<div class="codebox"><button onclick="copyCode('c02',this)">Copy</button>
+<pre id="c02">git clone https://github.com/TroyKaravias/unitree_robots_aruco_opencv.git
+cd unitree_robots_aruco_opencv</pre></div>
+<div class="ok">&#10003; Check: <code>ls</code> shows <code>scripts/</code>, <code>aruco_markers/</code>, <code>unitree_webrtc_connect/</code>, <code>README.md</code></div>
+</div>
+</section>
+
+<!-- PART 3 -->
+<section class="section" id="s3">
+<h2>Part 3 &mdash; Install dependencies (your laptop)</h2>
+
+<div class="step">
+<div class="step-num">Step 1 &mdash; Create a virtual environment</div>
+<div class="codebox"><button onclick="copyCode('c03',this)">Copy</button>
+<pre id="c03">python3 -m venv venv
+source venv/bin/activate</pre></div>
+<div class="note">Run <code>source venv/bin/activate</code> every time you open a new terminal. Your prompt shows <code>(venv)</code> when active.</div>
+</div>
+
+<div class="step">
+<div class="step-num">Step 2 &mdash; Install packages</div>
+<div class="codebox"><button onclick="copyCode('c04',this)">Copy</button>
+<pre id="c04">pip install -U pip
+pip install -e ./unitree_webrtc_connect
+pip install opencv-contrib-python numpy</pre></div>
+</div>
+
+<div class="step">
+<div class="step-num">Step 3 &mdash; Verify the install</div>
+<div class="codebox"><button onclick="copyCode('c05',this)">Copy</button>
+<pre id="c05">python3 -c "import cv2; print('OpenCV:', cv2.__version__); cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50); print('ArUco OK')"</pre></div>
+<div class="ok">&#10003; Check: you see <code>OpenCV: 4.x.x</code> and <code>ArUco OK</code> with no errors.</div>
+</div>
+</section>
+
+<!-- PART 4 -->
+<section class="section" id="s4">
+<h2>Part 4 &mdash; Print your ArUco markers</h2>
+<p>All markers use <strong>DICT_4X4_50</strong>. You need markers <strong>0&ndash;9</strong> for the full G1 demo and <strong>0&ndash;8</strong> for the Go2 demo.</p>
+
+<div class="step">
+<div class="step-num">Step 1 &mdash; Generate print-ready sheets for all 10 markers</div>
+<div class="codebox"><button onclick="copyCode('c06',this)">Copy</button>
+<pre id="c06">for i in 0 1 2 3 4 5 6 7 8 9; do
+  python3 scripts/generate_printable_marker.py --id $i --size-in 5.5 --dpi 300
+done</pre></div>
+<p>Files land in <code>aruco_markers/printables/</code>. Open each <code>_letter.html</code> in Chrome and print with <strong>Scale = 100% (Actual Size)</strong>.</p>
+</div>
+
+<div class="warn">&#9888; <strong>Print tips:</strong> Use card stock if available. Black and white is fine. Keep a white border around each marker &mdash; do not crop the edges. Hold markers flat and steady when testing.</div>
+</section>
+
+<!-- PART 5 -->
+<section class="section" id="s5">
+<h2>Part 5 &mdash; Go2: laptop WebRTC path</h2>
+<div class="note">Complete this section before attempting the onboard deployment in Part 6. The laptop path is the fully working starting point.</div>
+
+<h3>Go2 marker mapping</h3>
+<table>
+  <tr><th>Marker ID</th><th>Action</th></tr>
+  <tr><td>0</td><td>Stop (StopMove)</td></tr>
+  <tr><td>1</td><td>Stand up</td></tr>
+  <tr><td>2</td><td>Sit</td></tr>
+  <tr><td>3</td><td>Walk forward 1 second</td></tr>
+  <tr><td>4</td><td>Turn left 1 second</td></tr>
+  <tr><td>5</td><td>Stretch</td></tr>
+  <tr><td>6</td><td>Shake hands</td></tr>
+  <tr><td>7</td><td>Greet (Hello)</td></tr>
+  <tr><td>8</td><td>Dance 1</td></tr>
+</table>
+
+<div class="step">
+<div class="step-num">Step 1 &mdash; Connect to the Go2 network and set the robot IP</div>
+<p>Connect your laptop to the Go2 Wi-Fi hotspot or local network.</p>
+<div class="codebox"><button onclick="copyCode('c07',this)">Copy</button>
+<pre id="c07">export UNITREE_ROBOT_IP=192.168.8.181</pre></div>
+<p>Replace with your robot&apos;s actual IP if different.</p>
+</div>
+
+<div class="step">
+<div class="step-num">Step 2 &mdash; Run the basic marker scanner</div>
+<div class="codebox"><button onclick="copyCode('c08',this)">Copy</button>
+<pre id="c08">python3 scripts/go2/go2_aruco_scan.py</pre></div>
+<p>An OpenCV window opens with the camera feed. Hold a printed marker in front of the camera. Press <code>q</code> to quit.</p>
+</div>
+
+<div class="step">
+<div class="step-num">Step 3 &mdash; Run the autonomous patrol mode (optional)</div>
+<div class="codebox"><button onclick="copyCode('c09',this)">Copy</button>
+<pre id="c09">python3 scripts/go2/go2_aruco_autonomous.py</pre></div>
+<p>The robot patrols, pauses to scan, and triggers actions on confirmed markers. Press <code>q</code> to stop.</p>
+</div>
+
+<div class="warn">&#9888; Always have marker 0 (Stop) in your hand during any live Go2 run. Start in a clear area with no obstacles or people nearby.</div>
+</section>
+
+<!-- PART 6 -->
+<section class="section" id="s6">
+<h2>Part 6 &mdash; Go2: onboard Jetson/PC2 deployment</h2>
+<div class="note">This covers running the project on the Go2&apos;s internal computer over a wired Ethernet connection. Complete Part 5 (laptop path) first.</div>
+
+<h3>How the onboard path is different</h3>
+<p>Instead of running Python on your laptop over Wi-Fi, you SSH into the Go2&apos;s internal Jetson or PC2 and run the script there. Commands go through BotBrain&apos;s ROS 2 system (<code>twist_mux</code>) instead of the WebRTC data channel.</p>
+
+<div class="step">
+<div class="step-num">Step 1 &mdash; Connect the Ethernet cable</div>
+<p>Plug a cable from your laptop into the Go2&apos;s internal network port. If no Ethernet port, use a USB-Ethernet adapter.</p>
+<div class="code-title">Identify your Ethernet interface name</div>
+<div class="codebox"><button onclick="copyCode('c10',this)">Copy</button>
+<pre id="c10">ip -br link
+ip -4 -br addr</pre></div>
+<p>Look for an interface that is not your Wi-Fi (not <code>wlan0</code> or <code>wlp</code>). It may look like <code>enx9c69d34c7599</code> (USB adapter) or <code>eth0</code>. Note the exact name for the next step.</p>
+</div>
+
+<div class="step">
+<div class="step-num">Step 2 &mdash; Configure the laptop&apos;s Ethernet for the Go2 network</div>
+<p>Replace <code>enx9c69d34c7599</code> with your actual interface name.</p>
+<div class="code-title">Create the persistent network profile</div>
+<div class="codebox"><button onclick="copyCode('c11',this)">Copy</button>
+<pre id="c11">sudo nmcli connection add \
+  type ethernet \
+  ifname enx9c69d34c7599 \
+  con-name unitree-wired \
+  ipv4.method manual \
+  ipv4.addresses 192.168.123.222/24 \
+  ipv4.never-default yes \
+  ipv6.method disabled</pre></div>
+<div class="code-title">Activate the profile</div>
+<div class="codebox"><button onclick="copyCode('c12',this)">Copy</button>
+<pre id="c12">sudo nmcli connection up unitree-wired</pre></div>
+<div class="code-title">Verify your laptop address</div>
+<div class="codebox"><button onclick="copyCode('c13',this)">Copy</button>
+<pre id="c13">ip -4 -br addr show enx9c69d34c7599</pre></div>
+<div class="ok">&#10003; Check: the interface shows <code>192.168.123.222/24</code>. Your Wi-Fi internet still works because of <code>ipv4.never-default yes</code>.</div>
+</div>
+
+<div class="step">
+<div class="step-num">Step 3 &mdash; Ping and SSH into the Go2 Jetson</div>
+<div class="codebox"><button onclick="copyCode('c14',this)">Copy</button>
+<pre id="c14">ping -c 4 192.168.123.170
+ssh unitree@192.168.123.170</pre></div>
+<div class="ok">&#10003; Check: your prompt changes to <code>unitree@ubuntu:~$</code>. You are now on the Go2&apos;s internal computer.</div>
+<div class="note">IP <code>192.168.123.170</code> is for the development Go2. Your unit may differ &mdash; check with your instructor.</div>
+</div>
+
+<div class="step">
+<div class="step-num">Step 4 &mdash; Inspect the Jetson host environment</div>
+<div class="codebox"><button onclick="copyCode('c15',this)">Copy</button>
+<pre id="c15">uname -a
+python3 --version
+df -h ~
+free -h
+sudo docker ps</pre></div>
+<p>You should see an NVIDIA Tegra/ARM kernel, Python 3.8+, and a Docker container named <code>bringup</code>.</p>
+</div>
+
+<div class="step">
+<div class="step-num">Step 5 &mdash; Clone the repository onto the Go2 Jetson</div>
+<p>Run these commands in your SSH session (on the Jetson, not your laptop):</p>
+<div class="codebox"><button onclick="copyCode('c16',this)">Copy</button>
+<pre id="c16">cd ~
+git clone https://github.com/TroyKaravias/unitree_robots_aruco_opencv.git
+cd unitree_robots_aruco_opencv
+ls</pre></div>
+<div class="code-title">If the repo already exists, update it instead</div>
+<div class="codebox"><button onclick="copyCode('c17',this)">Copy</button>
+<pre id="c17">cd ~/unitree_robots_aruco_opencv
+git pull</pre></div>
+<div class="ok">&#10003; Check: <code>ls</code> shows <code>scripts/</code>, <code>aruco_markers/</code>, <code>unitree_webrtc_connect/</code>.</div>
+</div>
+
+<div class="step">
+<div class="step-num">Step 6 &mdash; Auto-start on boot &mdash; the script starts automatically</div>
+<p>The autonomous script is deployed at <code>/home/unitree/go2_aruco_autonomous.py</code> and is configured to start automatically every time the Go2 powers on via a cron <code>@reboot</code> job. <strong>No manual SSH is required to start it.</strong></p>
+<p>To verify or set up the cron job on the Jetson:</p>
+<div class="codebox"><button onclick="copyCode('c18',this)">Copy</button>
+<pre id="c18">crontab -l</pre></div>
+<div class="ok">&#10003; Check: you see a line starting with <code>@reboot sleep 20 &amp;&amp; env PYTHONPATH=...</code> pointing to <code>go2_aruco_autonomous.py</code>. If missing, add it:<br>
+<code>(crontab -l 2>/dev/null; echo "@reboot sleep 20 &amp;&amp; env PYTHONPATH=/home/unitree/unitree_webrtc_connect python3 -u /home/unitree/go2_aruco_autonomous.py >> /tmp/patrol.log 2>&amp;1") | crontab -</code></div>
+<p>The 20-second delay lets the robot&rsquo;s network and BotBrain services finish starting before the script launches.</p>
+</div>
+
+<div class="step">
+<div class="step-num">Step 7 &mdash; Access the web control UI after boot</div>
+<p>After the Go2 powers on, wait about <strong>30 seconds</strong>, then open a browser on any device connected to the same network:</p>
+<div class="codebox"><button onclick="copyCode('c19',this)">Copy</button>
+<pre id="c19">http://192.168.12.1:8080/</pre></div>
+<p>If connected via Ethernet instead of hotspot:</p>
+<div class="codebox"><button onclick="copyCode('c19b',this)">Copy</button>
+<pre id="c19b">http://192.168.123.170:8080/</pre></div>
+<div class="ok">&#10003; Check:
+<ul>
+  <li><strong>Left panel</strong> &mdash; live MJPEG camera feed with ArUco detection overlay.</li>
+  <li><strong>Right panel</strong> &mdash; scan log updating in real time.</li>
+  <li><strong>Start Patrol</strong> and <strong>Stop Patrol</strong> buttons visible at the bottom.</li>
+</ul>
+The script always starts in <strong>standby</strong> &mdash; the robot will not move until you press Start Patrol.</div>
+</div>
+
+<div class="step">
+<div class="step-num">Step 8 &mdash; Useful Go2 utility commands (run on Jetson)</div>
+<p>Use these to check status or restart the script if needed:</p>
+<div class="code-title">Check if the script is running</div>
+<div class="codebox"><button onclick="copyCode('c20b',this)">Copy</button>
+<pre id="c20b">pgrep -a -f go2_aruco_autonomous.py</pre></div>
+<div class="code-title">View the live log</div>
+<div class="codebox"><button onclick="copyCode('c20c',this)">Copy</button>
+<pre id="c20c">grep -v 'swscaler\|h264\|no frame\|decode_slice\|non-existing\|PPS' /tmp/patrol.log</pre></div>
+<div class="code-title">Restart the script manually</div>
+<div class="codebox"><button onclick="copyCode('c20d',this)">Copy</button>
+<pre id="c20d">pkill -f go2_aruco_autonomous.py
+sleep 2
+nohup env PYTHONPATH=/home/unitree/unitree_webrtc_connect \
+  python3 -u /home/unitree/go2_aruco_autonomous.py \
+  >> /tmp/patrol.log 2>&1 &
+echo PID:$!</pre></div>
+</div>
+
+<div class="step">
+<div class="step-num">Step 9 &mdash; Explore BotBrain ROS 2 (optional)</div>
+<p>Enter the BotBrain Docker container:</p>
+<div class="codebox"><button onclick="copyCode('c20',this)">Copy</button>
+<pre id="c20">sudo docker exec -it bringup bash
+source /botbrain_ws/install/setup.bash
+printenv ROS_DISTRO
+ros2 topic list</pre></div>
+<div class="code-title">Inspect the wireless controller input</div>
+<div class="codebox"><button onclick="copyCode('c21',this)">Copy</button>
+<pre id="c21">ros2 topic info /wirelesscontroller
+ros2 topic echo /wirelesscontroller</pre></div>
+<div class="code-title">Inspect BotBrain velocity routing</div>
+<div class="codebox"><button onclick="copyCode('c22',this)">Copy</button>
+<pre id="c22">ros2 node info /go2/twist_mux
+ros2 param dump /go2/twist_mux</pre></div>
+<div class="code-title">Check the onboard camera topic</div>
+<div class="codebox"><button onclick="copyCode('c23',this)">Copy</button>
+<pre id="c23">ros2 topic info /go2/front_camera/color/image_raw
+ros2 topic hz /go2/front_camera/color/image_raw</pre></div>
+</div>
+
+<h3>BotBrain controller key masks</h3>
+<table>
+  <tr><th>Button combo</th><th>Bitmask</th><th>Planned behavior</th></tr>
+  <tr><td>L1 + Y</td><td>2050</td><td>Enable autonomous ArUco search</td></tr>
+  <tr><td>L2 + Y</td><td>2080</td><td>Disable autonomy (return to manual walking)</td></tr>
+  <tr><td>Manual joystick priority</td><td>100</td><td>Always overrides autonomy</td></tr>
+  <tr><td>Custom autonomy candidate</td><td>99 on <code>/go2/cmd_vel_nipple</code></td><td>One level below manual</td></tr>
+</table>
+
+<div class="warn">
+&#9888; <strong>Do not run the laptop WebRTC controller and onboard script at the same time</strong> &mdash; both attempt WebRTC camera access and will conflict.<br><br>
+&#9888; Disabling autonomy via Stop Patrol or the controller must only stop the custom velocity command. It must NOT call Damp, Sit, or any posture command.
+</div>
+</section>
+
+<!-- PART 7 -->
+<section class="section" id="s7">
+<h2>Part 7 &mdash; G1: deploy the scanner to the Jetson</h2>
+<div class="note">This section gets the G1 scanner and monitor onto the G1 Jetson NX from scratch. If the scanner is already deployed (check with your instructor), skip to <a href="#s8">Part 8</a>.</div>
+
+<h3>G1 Jetson details</h3>
+<table>
+  <tr><th>Item</th><th>Value</th></tr>
+  <tr><td>IP address</td><td>192.168.123.164</td></tr>
+  <tr><td>Username</td><td>unitree</td></tr>
+  <tr><td>Password</td><td>123</td></tr>
+  <tr><td>Scanner script on Jetson</td><td>/home/unitree/g1_camera_view.py</td></tr>
+  <tr><td>Monitor script on Jetson</td><td>/home/unitree/g1_scanner_monitor.sh</td></tr>
+  <tr><td>Camera device</td><td>/dev/video4 (Intel RealSense D435i)</td></tr>
+  <tr><td>CycloneDDS config</td><td>/home/unitree/cyclonedds_no_shm.xml</td></tr>
+  <tr><td>Loco binary</td><td>/home/unitree/unitree_sdk2-main/build/bin/g1_loco_client</td></tr>
+  <tr><td>Arm action binary</td><td>/home/unitree/unitree_sdk2-main/build/bin/g1_arm_action_example</td></tr>
+  <tr><td>Network interface (Jetson to robot body)</td><td>enP8p1s0</td></tr>
+</table>
+
+<div class="step">
+<div class="step-num">Step 1 &mdash; Verify the Jetson is reachable</div>
+<div class="codebox"><button onclick="copyCode('c24',this)">Copy</button>
+<pre id="c24">ping -c 4 192.168.123.164</pre></div>
+<div class="ok">&#10003; Check: replies from 192.168.123.164. If nothing responds, confirm your laptop is on the 192.168.123.x subnet.</div>
+</div>
+
+<div class="step">
+<div class="step-num">Step 2 &mdash; Copy the scanner script from your laptop to the Jetson</div>
+<p>Run from your laptop (not inside an SSH session). Make sure you are in the repo root:</p>
+<div class="codebox"><button onclick="copyCode('c25',this)">Copy</button>
+<pre id="c25">scp scripts/g1/g1_camera_view.py unitree@192.168.123.164:/home/unitree/g1_camera_view.py
+# password: 123</pre></div>
+<div class="ok">&#10003; Check: the command prints a transfer summary line with the file size.</div>
+</div>
+
+<div class="step">
+<div class="step-num">Step 3 &mdash; SSH into the G1 Jetson</div>
+<div class="codebox"><button onclick="copyCode('c26',this)">Copy</button>
+<pre id="c26">ssh unitree@192.168.123.164
+# password: 123</pre></div>
+<p>Your prompt changes to something like <code>unitree@unitree-desktop:~$</code>.</p>
+</div>
+
+<div class="step">
+<div class="step-num">Step 4 &mdash; Verify Python and OpenCV on the Jetson</div>
+<div class="codebox"><button onclick="copyCode('c27',this)">Copy</button>
+<pre id="c27">python3 --version
+python3 -c "import cv2; print('OpenCV:', cv2.__version__); cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50); print('ArUco OK')"</pre></div>
+<div class="ok">&#10003; Check: Python 3.x and <code>ArUco OK</code> with no errors.</div>
+<div class="note">If OpenCV is missing on the Jetson: <code>pip3 install opencv-contrib-python numpy</code></div>
+</div>
+
+<div class="step">
+<div class="step-num">Step 5 &mdash; Create the monitor script on the Jetson</div>
+<p>Still in your SSH session, run this exactly &mdash; it creates and writes the file in one command:</p>
+<div class="codebox"><button onclick="copyCode('c28',this)">Copy</button>
+<pre id="c28">cat > /home/unitree/g1_scanner_monitor.sh &lt;&lt; 'MONEOF'
+#!/bin/bash
+while true; do
+  if ! pgrep -f g1_camera_view.py > /dev/null 2>&1; then
+    echo "$(date): MONITOR restarting scanner" >> /tmp/g1_camera.log
+    setsid python3 -u /home/unitree/g1_camera_view.py --headless --stream-port 8080 >> /tmp/g1_camera.log 2>&1 &
+  fi
+  sleep 3
+done
+MONEOF
+chmod +x /home/unitree/g1_scanner_monitor.sh</pre></div>
+<div class="code-title">Verify the file was created correctly</div>
+<div class="codebox"><button onclick="copyCode('c29',this)">Copy</button>
+<pre id="c29">cat /home/unitree/g1_scanner_monitor.sh</pre></div>
+<div class="ok">&#10003; Check: the file contents match what you pasted. The last line should be <code>done</code>.</div>
+</div>
+
+<div class="step">
+<div class="step-num">Step 6 &mdash; Verify the SDK binaries are in place</div>
+<div class="codebox"><button onclick="copyCode('c30',this)">Copy</button>
+<pre id="c30">ls -lh /home/unitree/unitree_sdk2-main/build/bin/g1_loco_client
+ls -lh /home/unitree/unitree_sdk2-main/build/bin/g1_arm_action_example
+ls /home/unitree/cyclonedds_no_shm.xml</pre></div>
+<div class="ok">&#10003; Check: all three files exist. If any are missing, the SDK was not compiled &mdash; check with your instructor.</div>
+</div>
+
+<div class="step">
+<div class="step-num">Step 7 &mdash; Quick sanity check (optional)</div>
+<p>Still in your SSH session:</p>
+<div class="codebox"><button onclick="copyCode('c31',this)">Copy</button>
+<pre id="c31">python3 /home/unitree/g1_camera_view.py --headless --stream-port 8080 &
+sleep 5
+ss -tlnp | grep 8080
+kill %1</pre></div>
+<div class="ok">&#10003; Check: port 8080 appears in the <code>ss</code> output, then kill it &mdash; the monitor manages it from now on.</div>
+</div>
+
+<div class="step">
+<div class="step-num">Step 8 &mdash; Exit your SSH session</div>
+<div class="codebox"><button onclick="copyCode('c32',this)">Copy</button>
+<pre id="c32">exit</pre></div>
+<p>You are back on your laptop. Continue to Part 8.</p>
+</div>
+
+<div class="tip">
+&#128161; <strong>Updating the script later:</strong> When you change <code>scripts/g1/g1_camera_view.py</code> on your laptop, redeploy with:<br>
+<code>scp scripts/g1/g1_camera_view.py unitree@192.168.123.164:/home/unitree/g1_camera_view.py</code><br>
+Then stop and restart the monitor (see Part 10).
+</div>
+</section>
+
+<!-- PART 8 -->
+<section class="section" id="s8">
+<h2>Part 8 &mdash; G1: start the scanner and open the stream</h2>
+
+<div class="step">
+<div class="step-num">Step 1 &mdash; Start the monitor from your laptop</div>
+<div class="codebox"><button onclick="copyCode('c33',this)">Copy</button>
+<pre id="c33">sshpass -p '123' ssh -o StrictHostKeyChecking=no unitree@192.168.123.164 \
+  'nohup bash /home/unitree/g1_scanner_monitor.sh > /dev/null 2>&1 & echo "Monitor started"'</pre></div>
+<p>The monitor runs an infinite loop. If the scanner exits for any reason, it restarts within 3 seconds automatically.</p>
+<div class="note">If <code>sshpass</code> is not installed: <code>sudo apt install sshpass</code></div>
+</div>
+
+<div class="step">
+<div class="step-num">Step 2 &mdash; Open the live browser stream</div>
+<p>Open any browser on your laptop and navigate to:</p>
+<div class="codebox"><button onclick="copyCode('c34',this)">Copy</button>
+<pre id="c34">http://192.168.123.164:8080/</pre></div>
+<div class="ok">&#10003; Check:
+<ul>
+  <li><strong>Left panel</strong> &mdash; live MJPEG camera feed. ArUco borders drawn on detected markers.</li>
+  <li><strong>Right panel</strong> &mdash; scan log showing &ldquo;G1 ready &mdash; scanning for markers&rdquo; and a frame counter incrementing.</li>
+</ul></div>
+</div>
+
+<div class="step">
+<div class="step-num">Step 3 &mdash; Verify from the terminal (optional)</div>
+<div class="codebox"><button onclick="copyCode('c35',this)">Copy</button>
+<pre id="c35">sshpass -p '123' ssh -o StrictHostKeyChecking=no unitree@192.168.123.164 \
+  'ss -tlnp | grep 8080 && tail -8 /tmp/g1_camera.log'</pre></div>
+<div class="ok">&#10003; Check: port 8080 is listed and the log shows the camera opened successfully.</div>
+</div>
+
+<div class="warn">&#9888; <strong>Before showing any markers &mdash; read Part 9 fully.</strong> The recommended order is: marker 1 first (safe rest), then marker 2 (stand up), then gestures. Showing marker 0 while the robot is standing will collapse it instantly.</div>
+</section>
+
+<!-- PART 9 -->
+<section class="section" id="s9">
+<h2>Part 9 &mdash; G1: all 10 marker actions</h2>
+
+<h3>How confirmation works</h3>
+<p>The scanner uses <strong>DICT_4X4_50</strong> and requires a marker to appear in <strong>3 consecutive frames</strong> before the action fires. Hold the marker flat and steady. Watch the count in the browser overlay &mdash; e.g. <code>ID 1&nbsp;&nbsp;(2/3)</code>. On frame 3 the action fires and a cooldown starts.</p>
+
+<h3>Complete G1 marker table</h3>
+<table>
+  <tr><th>Marker ID</th><th>Action</th><th>Cooldown</th><th>Notes</th></tr>
+  <tr><td><strong>0</strong></td><td>Zero torque</td><td>4 sec</td><td>&#9888; All motors off instantly. Robot collapses. <strong>Only use when robot is on the floor.</strong></td></tr>
+  <tr><td><strong>1</strong></td><td>Damping (safe rest)</td><td>4 sec</td><td><strong>Always scan this first.</strong> Safe compliant rest state.</td></tr>
+  <tr><td><strong>2</strong></td><td>Locked standing (FSM 500)</td><td>15 sec</td><td>Stand-up sequence ~8 seconds. Must be in damping first. Browser may flicker and recover on its own.</td></tr>
+  <tr><td><strong>3</strong></td><td>Walking / running mode</td><td>4 sec</td><td>Enables continuous gait. Must be in locked standing (FSM 500) first.</td></tr>
+  <tr><td><strong>4</strong></td><td>Wave above head</td><td>4 sec</td><td>Arm action 26. Requires FSM 500.</td></tr>
+  <tr><td><strong>5</strong></td><td>Blow kiss</td><td>4 sec</td><td>Arm action 11. Requires FSM 500.</td></tr>
+  <tr><td><strong>6</strong></td><td>Shake hand</td><td>4 sec</td><td>Arm action 27. Requires FSM 500.</td></tr>
+  <tr><td><strong>7</strong></td><td>Both hands up</td><td>4 sec</td><td>Arm action 15. Requires FSM 500.</td></tr>
+  <tr><td><strong>8</strong></td><td>Right hand on heart</td><td>4 sec</td><td>Arm action 33. Requires FSM 500.</td></tr>
+  <tr><td><strong>9</strong></td><td>Ultraman ray</td><td>4 sec</td><td>Arm action 24. Requires FSM 500.</td></tr>
+</table>
+
+<h3>&#10003; Recommended demonstration sequence</h3>
+<div class="ok">
+<ol>
+  <li><strong>Scan marker 1</strong> &mdash; damping. Watch the log confirm &ldquo;Damping&rdquo;.</li>
+  <li><strong>Scan marker 2</strong> &mdash; robot stands up (~8 seconds). 15-second cooldown prevents re-triggering. Browser may go dark briefly and recover.</li>
+  <li><strong>Scan markers 4&ndash;9</strong> one at a time &mdash; arm gestures. Wait for each to finish before the next.</li>
+  <li><strong>Scan marker 3</strong> &mdash; enables walking mode (optional).</li>
+  <li><strong>Scan marker 1</strong> &mdash; return to damping before finishing. Always end here.</li>
+</ol>
+</div>
+
+<h3>What you see in the browser</h3>
+<table>
+  <tr><th>Element</th><th>What it means</th></tr>
+  <tr><td>Left panel &mdash; camera feed</td><td>Live MJPEG from the RealSense. ArUco borders and ID labels on detected markers.</td></tr>
+  <tr><td><code>ID 1&nbsp;&nbsp;(2/3)</code> overlay</td><td>Marker 1 seen in 2 frames, needs 1 more to confirm.</td></tr>
+  <tr><td>Right panel &mdash; scan log</td><td>Real-time events: visible markers, action running, frame count.</td></tr>
+  <tr><td>Green log: &ldquo;Confirmed ID 2&rdquo;</td><td>Marker confirmed &mdash; action dispatched.</td></tr>
+  <tr><td>Yellow log: &ldquo;&#9654; ID 4: Wave above head&rdquo;</td><td>Arm gesture is executing right now.</td></tr>
+</table>
+
+<div class="warn">
+&#9888; <strong>Never show marker 0 while the robot is standing.</strong> It cuts all motor torque with no warning.<br><br>
+&#9888; <strong>Gestures (markers 4&ndash;9) require FSM 500 (locked standing).</strong> If the robot is in damping, gestures do nothing. Scan marker 2 first.<br><br>
+&#9888; <strong>Cooldowns:</strong> Holding the marker during a cooldown does nothing. Just wait. Marker 2 = 15 seconds. All others = 4 seconds.
+</div>
+</section>
+
+<!-- PART 10 -->
+<section class="section" id="s10">
+<h2>Part 10 &mdash; Troubleshooting</h2>
+
+<h3>General</h3>
+<table>
+  <tr><th>Symptom</th><th>Fix</th></tr>
+  <tr><td><code>import cv2</code> fails or ArUco not found</td><td>Activate your venv (<code>source venv/bin/activate</code>) and confirm you installed <code>opencv-contrib-python</code>, not plain <code>opencv-python</code>.</td></tr>
+  <tr><td>Marker detected but action never fires</td><td>Cooldown is still active, or the marker did not stay steady for 3 full frames. Watch the count in the overlay &mdash; it must reach 3.</td></tr>
+  <tr><td>Detection count resets to 0 each frame</td><td>Lighting or glare causes missed frames. Improve lighting and hold the marker flatter and closer.</td></tr>
+</table>
+
+<h3>G1 specific</h3>
+<table>
+  <tr><th>Symptom</th><th>Fix</th></tr>
+  <tr><td>Can&apos;t ping 192.168.123.164</td><td>Confirm your laptop is on the 192.168.123.x subnet and the Jetson has power.</td></tr>
+  <tr><td>Browser stream does not open</td><td>Wait 10 seconds and refresh. Verify with the port-check command below.</td></tr>
+  <tr><td>Stream opens but camera is black</td><td>RealSense ROS node is still releasing the camera. Wait 5 seconds and refresh.</td></tr>
+  <tr><td>Gestures do nothing (markers 4&ndash;9)</td><td>Robot must be in FSM 500. Scan marker 1 then marker 2 first.</td></tr>
+  <tr><td>Marker 2 sequence fails / robot sits back down</td><td>Scan marker 1, wait 3 seconds, then scan marker 2 again.</td></tr>
+  <tr><td>Browser goes dark briefly</td><td>Normal during the marker 2 sequence. The monitor restarts the scanner within 3 seconds.</td></tr>
+  <tr><td>Scanner not responding to markers</td><td>Check the log (command below). Monitor auto-restarts on crash.</td></tr>
+  <tr><td><code>sshpass</code>: command not found</td><td><code>sudo apt install sshpass</code> on your laptop.</td></tr>
+</table>
+
+<h3>G1 utility commands</h3>
+<div class="code-title">Check if port 8080 is listening</div>
+<div class="codebox"><button onclick="copyCode('c36',this)">Copy</button>
+<pre id="c36">sshpass -p '123' ssh -o StrictHostKeyChecking=no unitree@192.168.123.164 \
+  'ss -tlnp | grep 8080'</pre></div>
+
+<div class="code-title">View the scanner log</div>
+<div class="codebox"><button onclick="copyCode('c37',this)">Copy</button>
+<pre id="c37">sshpass -p '123' ssh -o StrictHostKeyChecking=no unitree@192.168.123.164 \
+  'tail -20 /tmp/g1_camera.log'</pre></div>
+
+<div class="code-title">Check if the scanner process is running</div>
+<div class="codebox"><button onclick="copyCode('c38',this)">Copy</button>
+<pre id="c38">sshpass -p '123' ssh -o StrictHostKeyChecking=no unitree@192.168.123.164 \
+  'pgrep -a -f g1_camera_view.py'</pre></div>
+
+<div class="code-title">Stop everything and start clean</div>
+<div class="codebox"><button onclick="copyCode('c39',this)">Copy</button>
+<pre id="c39">sshpass -p '123' ssh -o StrictHostKeyChecking=no unitree@192.168.123.164 \
+  'pkill -f g1_scanner_monitor; pkill -f g1_camera_view.py; echo "Stopped"'</pre></div>
+<p>Then restart with the monitor command from Part 8 Step 1.</p>
+
+<div class="code-title">Redeploy the scanner script after making changes on your laptop</div>
+<div class="codebox"><button onclick="copyCode('c40',this)">Copy</button>
+<pre id="c40">scp scripts/g1/g1_camera_view.py unitree@192.168.123.164:/home/unitree/g1_camera_view.py</pre></div>
+
+<div class="code-title">SSH directly into the Jetson</div>
+<div class="codebox"><button onclick="copyCode('c41',this)">Copy</button>
+<pre id="c41">ssh unitree@192.168.123.164
+# password: 123</pre></div>
+
+<h3>Go2 onboard specific</h3>
+<table>
+  <tr><th>Symptom</th><th>Fix</th></tr>
+  <tr><td>Can&apos;t reach <code>http://192.168.12.1:8080/</code> after boot</td><td>Wait 30 seconds and refresh. SSH in and run <code>pgrep -a -f go2_aruco_autonomous.py</code>. If not running, check <code>/tmp/patrol.log</code> for startup errors. Confirm you are connected to the Go2 hotspot.</td></tr>
+  <tr><td>Script not running after reboot</td><td>SSH in and run <code>crontab -l</code> to verify the @reboot entry exists. If missing, re-add it (see Part 6 Step 6).</td></tr>
+  <tr><td>Normal internet stopped working</td><td>Run <code>ip route</code> &mdash; your default route should still be via Wi-Fi. The wired profile uses <code>ipv4.never-default yes</code>.</td></tr>
+  <tr><td>BotBrain container not found</td><td><code>sudo docker ps</code> &mdash; the container name may differ. Ask your instructor.</td></tr>
+  <tr><td>ROS 2 camera topic has 0 publishers</td><td>Onboard camera integration is not complete. Use the laptop WebRTC path for the full ArUco demo.</td></tr>
+</table>
+</section>
+
+<hr style="margin-top:3rem; border:none; border-top:1px solid var(--border);">
+<p style="margin-top:1.2rem;">
+  <a href="student_guide.html" download="student_guide.html"
+     style="display:inline-block; background:#1f4e79; color:#fff; text-decoration:none;
+            padding:9px 20px; border-radius:7px; font-size:.95rem; font-weight:bold;">
+    &#11015; Download this guide
+  </a>
+</p>
+<p style="color:var(--muted); font-size:.9rem; margin-top:1rem;">
+Student Guide &mdash; Unitree Robots ArUco OpenCV &mdash; RoboUniversity / RoboStore &mdash; Troy Karavias, Stony Brook University<br>
+Repository: <a href="https://github.com/TroyKaravias/unitree_robots_aruco_opencv">github.com/TroyKaravias/unitree_robots_aruco_opencv</a>
+</p>
+</div>
+<script>
+function copyCode(id, btn) {
+  var text = document.getElementById(id).innerText;
+  navigator.clipboard.writeText(text).then(function() {
+    var orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(function() { btn.textContent = orig; }, 1800);
+  });
+}
+</script>
+</body>
+</html>

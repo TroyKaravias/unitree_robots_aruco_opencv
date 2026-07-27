@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Unitree Robot Commands Cheatsheet</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #1e1e2e;
+      color: #cdd6f4;
+      padding: 2rem;
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.8rem;
+      margin-bottom: 2rem;
+      color: #89b4fa;
+    }
+    .section {
+      background: #313244;
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      border-left: 4px solid #89b4fa;
+    }
+    .section.go2 { border-left-color: #a6e3a1; }
+    .section.diag { border-left-color: #fab387; }
+    .section.go2-auto { border-left-color: #cba6f7; }
+    h2 {
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+      color: #89b4fa;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .section.go2 h2 { color: #a6e3a1; }
+    .section.diag h2 { color: #fab387; }
+    .cmd-block {
+      background: #1e1e2e;
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    .cmd-block:last-child { margin-bottom: 0; }
+    .cmd-content {
+      flex: 1;
+    }
+    .cmd-label {
+      font-size: 0.75rem;
+      color: #6c7086;
+      margin-bottom: 0.3rem;
+    }
+    code {
+      font-family: 'Cascadia Code', 'Fira Code', 'Courier New', monospace;
+      font-size: 0.88rem;
+      color: #cdd6f4;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .copy-btn {
+      background: #45475a;
+      border: none;
+      color: #cdd6f4;
+      border-radius: 5px;
+      padding: 0.3rem 0.7rem;
+      font-size: 0.78rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .copy-btn:hover { background: #585b70; }
+    .copy-btn.copied {
+      background: #a6e3a1;
+      color: #1e1e2e;
+    }
+    .tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      background: #45475a;
+      border-radius: 4px;
+      padding: 0.1rem 0.45rem;
+      margin-left: 0.3rem;
+      vertical-align: middle;
+    }
+    a.url-link {
+      color: #89dceb;
+      text-decoration: none;
+    }
+    a.url-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<h1>🤖 Unitree Robot — Commands Cheatsheet</h1>
+
+<!-- G1 Section -->
+<div class="section">
+  <h2>🦾 G1 Robot <span class="tag">SSH into Jetson first</span></h2>
+
+  <div class="cmd-block">
+    <div class="cmd-content">
+      <div class="cmd-label">SSH into the Jetson (password: 123)</div>
+      <code>ssh unitree@192.168.123.164</code>
+    </div>
+    <button class="copy-btn" onclick="copyCmd(this, 'ssh unitree@192.168.123.164')">Copy</button>
+  </div>
+
+  <div class="cmd-block">
+    <div class="cmd-content">
+      <div class="cmd-label">Start the camera + ArUco scanner (with auto-restart monitor)</div>
+      <code>nohup bash /home/unitree/g1_scanner_monitor.sh > /dev/null 2>&1 &</code>
+    </div>
+    <button class="copy-btn" onclick="copyCmd(this, 'nohup bash /home/unitree/g1_scanner_monitor.sh > /dev/null 2>&1 &')">Copy</button>
+  </div>
+
+  <div class="cmd-block">
+    <div class="cmd-content">
+      <div class="cmd-label">Kill stuck script and restart with alternate device (/dev/video5)</div>
+      <code>pkill -f g1_camera_view.py; pkill -f g1_scanner_monitor.sh
+G1_CAMERA_DEVICE=/dev/video5 nohup bash /home/unitree/g1_scanner_monitor.sh > /dev/null 2>&1 &</code>
+    </div>
+    <button class="copy-btn" onclick="copyCmd(this, 'pkill -f g1_camera_view.py; pkill -f g1_scanner_monitor.sh\nG1_CAMERA_DEVICE=/dev/video5 nohup bash /home/unitree/g1_scanner_monitor.sh > /dev/null 2>&1 &')">Copy</button>
+  </div>
+
+  <div class="cmd-block">
+    <div class="cmd-content">
+      <div class="cmd-label">Watch the live log</div>
+      <code>tail -f /tmp/g1_camera.log</code>
+    </div>
+    <button class="copy-btn" onclick="copyCmd(this, 'tail -f /tmp/g1_camera.log')">Copy</button>
+  </div>
+
+  <div class="cmd-block">
+    <div class="cmd-content">
+      <div class="cmd-label">View camera stream in browser</div>
+      <code><a class="url-link" href="http://192.168.123.164:8080/" target="_blank">http://192.168.123.164:8080/</a></code>
+    </div>
+    <button class="copy-btn" onclick="copyCmd(this, 'http://192.168.123.164:8080/')">Copy</button>
+  </div>
+</div>
+
+<!-- Go2 Section -->
+<div class="section go2">
+  <h2>🐕 Go2 Robot <span class="tag">Run on your laptop</span></h2>
+
+  <div class="cmd-block">
+    <div class="cmd-content">
+      <div class="cmd-label">Navigate to the project folder</div>
+      <code>cd /home/troy81004/unitree_robots_aruco_opencv</code>
+    </div>
+    <button class="copy-btn" onclick="copyCmd(this, 'cd /home/troy81004/unitree_robots_aruco_opencv')">Copy</button>
+  </div>
+
+  <div class="cmd-block">
+    <div class="cmd-content">
+      <div class="cmd-label">Run the ArUco scanner script</div>
+      <code>python3 scripts/go2/go2_aruco_scan.py</code>
+    </div>
+    <button class="copy-btn" onclick="copyCmd(this, 'python3 scripts/go2/go2_aruco_scan.py')">Copy</button>
+  </div>
+
+  <div class="cmd-block">
+    <div class="cmd-content">
+      <div class="cmd-label">Run with a custom Go2 IP (if not 192.168.8.181)</div>
+      <code>UNITREE_ROBOT_IP=&lt;actual_ip&gt; python3 scripts/go2/go2_aruco_scan.py</code>
+    </div>
+    <button class="copy-btn" onclick="copyCmd(this, 'UNITREE_ROBOT_IP=<actual_ip> python3 scripts/go2/go2_aruco_scan.py')">Copy</button>
+  </div>
+
+  <div class="cmd-block">
+    <div class="cmd-content">
+      <div class="cmd-label">Run the autonomous script</div>
+      <code>python3 scripts/go2/go2_aruco_autonomous.py</code>
+    </div>
+    <button class="copy-btn" onclick="copyCmd(this, 'python3 scripts/go2/go2_aruco_autonomous.py')">Copy</button>
+  </div>
+</div>
+
+<!-- Go2 Autonomous Section -->
+<div class="section go2-auto">
+  <h2>🐕 Go2 Autonomous Mode <span class="tag">Run on your laptop</span></h2>
+
+  <div class="cmd-block">
+    <div class="cmd-content">
+      <div class="cmd-label">Start the autonomous script (opens MJPEG stream automatically)</div>
+      <code>python3 scripts/go2/go2_aruco_autonomous.py</code>
+    </div>
+    <button class="copy-btn" onclick="copyCmd(this, 'python3 scripts/go2/go2_aruco_autonomous.py')">Copy</button>
+  </div>
+
+  <div class="cmd-block">
+    <div class="cmd-content">
+      <div class="cmd-label">Force headless mode (stream only, no OpenCV window)</div>
+      <code>HEADLESS=1 python3 scripts/go2/go2_aruco_autonomous.py</code>
+    </div>
+    <button class="copy-btn" onclick="copyCmd(this, 'HEADLESS=1 python3 scripts/go2/go2_aruco_autonomous.py')">Copy</button>
+  </div>
+
+  <div class="cmd-block">
+    <div class="cmd-content">
+      <div class="cmd-label">View stream &amp; control — via Go2 hotspot (WiFi)</div>
+      <code><a class="url-link" href="http://192.168.12.1:8080/" target="_blank">http://192.168.12.1:8080/</a></code>
+    </div>
+    <button class="copy-btn" onclick="copyCmd(this, 'http://192.168.12.1:8080/')">Copy</button>
+  </div>
+
+  <div class="cmd-block">
+    <div class="cmd-content">
+      <div class="cmd-label">View stream &amp; control — via Ethernet</div>
+      <code><a class="url-link" href="http://192.168.123.170:8080/" target="_blank">http://192.168.123.170:8080/</a></code>
+    </div>
+    <button class="copy-btn" onclick="copyCmd(this, 'http://192.168.123.170:8080/')">Copy</button>
+  </div>
+
+  <div class="cmd-block">
+    <div class="cmd-content">
+      <div class="cmd-label">Run with custom IP and custom stream port</div>
+      <code>UNITREE_ROBOT_IP=&lt;ip&gt; STREAM_PORT=8081 python3 scripts/go2/go2_aruco_autonomous.py</code>
+    </div>
+    <button class="copy-btn" onclick="copyCmd(this, 'UNITREE_ROBOT_IP=<ip> STREAM_PORT=8081 python3 scripts/go2/go2_aruco_autonomous.py')">Copy</button>
+  </div>
+</div>
+
+<!-- Go2 Autonomous Web UI Section -->
+<div class="section go2">
+  <h2>🌐 Go2 Autonomous Web UI <span class="tag">After starting go2_aruco_autonomous.py</span></h2>
+
+  <div class="cmd-block">
+    <div class="cmd-content">
+      <div class="cmd-label">Open the control UI in your browser — via Go2 hotspot (direct WiFi)</div>
+      <code><a class="url-link" href="http://192.168.12.1:8080/" target="_blank">http://192.168.12.1:8080/</a></code>
+    </div>
+    <button class="copy-btn" onclick="copyCmd(this, 'http://192.168.12.1:8080/')">Copy</button>
+  </div>
+
+  <div class="cmd-block">
+    <div class="cmd-content">
+      <div class="cmd-label">Open the control UI — via ethernet (if connected by cable)</div>
+      <code><a class="url-link" href="http://192.168.123.170:8080/" target="_blank">http://192.168.123.170:8080/</a></code>
+    </div>
+    <button class="copy-btn" onclick="copyCmd(this, 'http://192.168.123.170:8080/')">Copy</button>
+  </div>
+
+  <div class="cmd-block" style="background:#1e1e2e; border-left: 3px solid #585b70; padding: 0.75rem 1rem;">
+    <div class="cmd-content">
+      <div class="cmd-label" style="color:#a6adc8;">What the UI gives you</div>
+      <code style="color:#a6adc8;">• Live camera feed (MJPEG stream)
+• Start Patrol button — Go2 begins scanning and acting on ArUco markers
+• Stop Patrol button — halts autonomous movement
+• Live ArUco scan log — shows detected marker IDs in real time</code>
+    </div>
+  </div>
+</div>
+
+<!-- Diagnostics Section -->
+<div class="section diag">
+  <h2>🔧 Diagnostics <span class="tag">Run on Jetson (G1)</span></h2>
+
+  <div class="cmd-block">
+    <div class="cmd-content">
+      <div class="cmd-label">Check if the script is running</div>
+      <code>pgrep -a -f g1_camera_view.py</code>
+    </div>
+    <button class="copy-btn" onclick="copyCmd(this, 'pgrep -a -f g1_camera_view.py')">Copy</button>
+  </div>
+
+  <div class="cmd-block">
+    <div class="cmd-content">
+      <div class="cmd-label">List all available camera devices</div>
+      <code>v4l2-ctl --list-devices</code>
+    </div>
+    <button class="copy-btn" onclick="copyCmd(this, 'v4l2-ctl --list-devices')">Copy</button>
+  </div>
+
+  <div class="cmd-block">
+    <div class="cmd-content">
+      <div class="cmd-label">Kill everything and start fresh</div>
+      <code>pkill -f g1_camera_view.py; pkill -f g1_scanner_monitor.sh</code>
+    </div>
+    <button class="copy-btn" onclick="copyCmd(this, 'pkill -f g1_camera_view.py; pkill -f g1_scanner_monitor.sh')">Copy</button>
+  </div>
+
+  <div class="cmd-block">
+    <div class="cmd-content">
+      <div class="cmd-label">Check the last 30 lines of the camera log</div>
+      <code>tail -30 /tmp/g1_camera.log</code>
+    </div>
+    <button class="copy-btn" onclick="copyCmd(this, 'tail -30 /tmp/g1_camera.log')">Copy</button>
+  </div>
+</div>
+
+<script>
+  function copyCmd(btn, text) {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.classList.remove('copied');
+      }, 1500);
+    });
+  }
+</script>
+
+</body>
+</html>
