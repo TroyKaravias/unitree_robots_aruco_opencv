@@ -134,11 +134,15 @@ def _run_loco_action(marker_id: int):
             # stand_up (FSM 4) → wait for robot to rise → start (FSM 500 locked standing)
             rc = _loco_call("--stand_up")
             if rc == 0:
-                time.sleep(5)
+                time.sleep(10)
                 _loco_call("--start")
         elif marker_id == 3:
-            # enable continuous gait (running mode) — must already be in FSM 500
-            _loco_call("--continous_gait=true")
+            # SwitchMoveMode(true) = R2+A on the physical controller.
+            # Transitions from locked standing (FSM 500) to arm+leg coordinated running mode.
+            # --start first in case FSM is still 4 (stand_up) instead of 500.
+            _loco_call("--start")
+            time.sleep(2)
+            _loco_call("--switch_move_mode=true")
         elif marker_id in _ARM_ACTION_IDS:
             action_id = _ARM_ACTION_IDS[marker_id]
             cmd = (

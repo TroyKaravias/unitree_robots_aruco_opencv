@@ -218,7 +218,7 @@ def _start_mjpeg_server(port):
 # ──────────────────────────────────────────────────────────────────────────────
 
 from unitree_webrtc_connect.webrtc_driver import UnitreeWebRTCConnection
-from unitree_webrtc_connect.constants import RTC_TOPIC, OBSTACLES_AVOID_API, SPORT_CMD, VUI_COLOR
+from unitree_webrtc_connect.constants import RTC_TOPIC, OBSTACLES_AVOID_API, SPORT_CMD, VUI_COLOR, DATA_CHANNEL_TYPE
 
 logging.basicConfig(level=logging.FATAL)
 
@@ -369,24 +369,26 @@ async def obstacle_switch_get(conn):
     return code, enabled
 
 
-async def enable_builtin_obstacle_avoidance(conn):
-    print("Checking built-in obstacle avoidance...")
-    code, enabled = await obstacle_switch_get(conn)
-    print(f"Obstacle avoidance before command: enabled={enabled}, code={code}")
-
-    print("Enabling built-in obstacle avoidance...")
-    code = await obstacle_switch_set(conn, True)
-    print(f"Enable command returned code={code}")
-
-    await asyncio.sleep(0.5)
-
-    code, enabled = await obstacle_switch_get(conn)
-    print(f"Obstacle avoidance after command: enabled={enabled}, code={code}")
-
-    if enabled is True:
-        print("SUCCESS: Built-in obstacle avoidance is enabled.\n")
-    else:
-        print("WARNING: Could not confirm obstacle avoidance is enabled.\n")
+def enable_builtin_obstacle_avoidance(conn):
+    """Fire-and-forget obstacle avoidance enable. The robot rarely sends a response
+    to this API so we skip waiting — the command still reaches the robot."""
+    import time as _time, random as _random
+    generated_id = int(_time.time() * 1000) % 2147483648 + _random.randint(0, 1000)
+    payload = {
+        "header": {
+            "identity": {
+                "id": generated_id,
+                "api_id": OBSTACLES_AVOID_API["SWITCH_SET"],
+            }
+        },
+        "parameter": json.dumps({"enable": True}),
+    }
+    conn.datachannel.pub_sub.publish_without_callback(
+        RTC_TOPIC["OBSTACLES_AVOID"],
+        payload,
+        DATA_CHANNEL_TYPE["REQUEST"],
+    )
+    print("Built-in obstacle avoidance enable command sent.\n")
 
 
 def publish_wireless_controller(pub_sub, lx=0.0, ly=0.0, rx=0.0, ry=0.0, keys=0):
@@ -1062,7 +1064,7 @@ async def main():
 
     _setup_controller_keybind(conn)
 
-    await enable_builtin_obstacle_avoidance(conn)
+    enable_builtin_obstacle_avoidance(conn)
 
     # Set LED to green (normal Go2 running color) to indicate standby
     await set_led_color(conn, VUI_COLOR.GREEN)
