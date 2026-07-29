@@ -296,9 +296,9 @@ git pull</pre></div>
 <p>To verify or set up the cron job on the Jetson:</p>
 <div class="codebox"><button onclick="copyCode('c18',this)">Copy</button>
 <pre id="c18">crontab -l</pre></div>
-<div class="ok">&#10003; Check: you see a line starting with <code>@reboot sleep 20 &amp;&amp; env PYTHONPATH=...</code> pointing to <code>go2_aruco_autonomous.py</code>. If missing, add it:<br>
-<code>(crontab -l 2>/dev/null; echo "@reboot sleep 20 &amp;&amp; env PYTHONPATH=/home/unitree/unitree_webrtc_connect python3 -u /home/unitree/go2_aruco_autonomous.py >> /tmp/patrol.log 2>&amp;1") | crontab -</code></div>
-<p>The 20-second delay lets the robot&rsquo;s network and BotBrain services finish starting before the script launches.</p>
+<div class="ok">&#10003; Check: you see a line starting with <code>@reboot sleep 20 &amp;&amp; bash /home/unitree/go2_patrol_monitor.sh</code>. If missing, add it:<br>
+<code>(crontab -l 2>/dev/null; echo "@reboot sleep 20 &amp;&amp; bash /home/unitree/go2_patrol_monitor.sh >> /tmp/patrol.log 2>&amp;1") | crontab -</code></div>
+<p>The 20-second delay lets the robot&rsquo;s network and BotBrain services finish starting. The monitor script handles auto-restart and responds to controller kill/restart commands (D-pad Down+X/Y).</p>
 </div>
 
 <div class="step">
@@ -331,8 +331,7 @@ The script always starts in <strong>standby</strong> &mdash; the robot will not 
 <div class="codebox"><button onclick="copyCode('c20d',this)">Copy</button>
 <pre id="c20d">pkill -f go2_aruco_autonomous.py
 sleep 2
-nohup env PYTHONPATH=/home/unitree/unitree_webrtc_connect \
-  python3 -u /home/unitree/go2_aruco_autonomous.py \
+nohup bash /home/unitree/go2_patrol_monitor.sh \
   >> /tmp/patrol.log 2>&1 &
 echo PID:$!</pre></div>
 </div>
@@ -359,13 +358,14 @@ ros2 param dump /go2/twist_mux</pre></div>
 ros2 topic hz /go2/front_camera/color/image_raw</pre></div>
 </div>
 
-<h3>BotBrain controller key masks</h3>
+<h3>BotBrain controller key masks (confirmed working via rosbridge)</h3>
 <table>
-  <tr><th>Button combo</th><th>Bitmask</th><th>Planned behavior</th></tr>
-  <tr><td>L1 + Y</td><td>2050</td><td>Enable autonomous ArUco search</td></tr>
-  <tr><td>L2 + Y</td><td>2080</td><td>Disable autonomy (return to manual walking)</td></tr>
+  <tr><th>Button combo</th><th>Bitmask</th><th>Behavior</th></tr>
+  <tr><td>D-pad Down + A</td><td>16640</td><td>Start autonomous patrol</td></tr>
+  <tr><td>D-pad Down + B</td><td>16896</td><td>Stop patrol (return to standby)</td></tr>
+  <tr><td>D-pad Down + X</td><td>17408</td><td>Kill script; monitor auto-restarts in ~5 s</td></tr>
+  <tr><td>D-pad Down + Y</td><td>18432</td><td>Kill script; holds until D-pad Down+X is pressed to restart</td></tr>
   <tr><td>Manual joystick priority</td><td>100</td><td>Always overrides autonomy</td></tr>
-  <tr><td>Custom autonomy candidate</td><td>99 on <code>/go2/cmd_vel_nipple</code></td><td>One level below manual</td></tr>
 </table>
 
 <div class="warn">
@@ -386,8 +386,8 @@ ros2 topic hz /go2/front_camera/color/image_raw</pre></div>
   <tr><td>Username</td><td>unitree</td></tr>
   <tr><td>Password</td><td>123</td></tr>
   <tr><td>Scanner script on Jetson</td><td>/home/unitree/g1_camera_view.py</td></tr>
-  <tr><td>Monitor script on Jetson</td><td>/home/unitree/g1_scanner_monitor.sh</td></tr>
-  <tr><td>Camera device</td><td>/dev/video4 (Intel RealSense D435i)</td></tr>
+  <tr><td>Monitor script on Jetson</td><td>/home/unitree/start_g1_scanner.sh</td></tr>
+  <tr><td>Camera device</td><td>/dev/video4 or /dev/video5 (auto-detected at startup)</td></tr>
   <tr><td>CycloneDDS config</td><td>/home/unitree/cyclonedds_no_shm.xml</td></tr>
   <tr><td>Loco binary</td><td>/home/unitree/unitree_sdk2-main/build/bin/g1_loco_client</td></tr>
   <tr><td>Arm action binary</td><td>/home/unitree/unitree_sdk2-main/build/bin/g1_arm_action_example</td></tr>
@@ -431,20 +431,33 @@ python3 -c "import cv2; print('OpenCV:', cv2.__version__); cv2.aruco.getPredefin
 <div class="step-num">Step 5 &mdash; Create the monitor script on the Jetson</div>
 <p>Still in your SSH session, run this exactly &mdash; it creates and writes the file in one command:</p>
 <div class="codebox"><button onclick="copyCode('c28',this)">Copy</button>
-<pre id="c28">cat > /home/unitree/g1_scanner_monitor.sh &lt;&lt; 'MONEOF'
+<pre id="c28">cat > /home/unitree/start_g1_scanner.sh &lt;&lt; 'MONEOF'
 #!/bin/bash
+trap '' SIGTERM
 while true; do
-  if ! pgrep -f g1_camera_view.py > /dev/null 2>&1; then
-    echo "$(date): MONITOR restarting scanner" >> /tmp/g1_camera.log
-    setsid python3 -u /home/unitree/g1_camera_view.py --headless --stream-port 8080 >> /tmp/g1_camera.log 2>&1 &
+  fuser -k 8080/tcp 2>/dev/null || true
+  DEVICE=""
+  for d in /dev/video4 /dev/video5 /dev/video3 /dev/video2; do
+    if [ -e "$d" ]; then
+      DEVICE="$d"
+      break
+    fi
+  done
+  if [ -z "$DEVICE" ]; then
+    echo "$(date): No camera device found, retrying in 10s" >> /tmp/g1_camera.log
+    sleep 10
+    continue
   fi
+  echo "$(date): Starting scanner on $DEVICE" >> /tmp/g1_camera.log
+  python3 -u /home/unitree/g1_camera_view.py --headless --stream-port 8080 --device $DEVICE >> /tmp/g1_camera.log 2>&1
+  echo "$(date): Scanner exited, restarting in 3s" >> /tmp/g1_camera.log
   sleep 3
 done
 MONEOF
-chmod +x /home/unitree/g1_scanner_monitor.sh</pre></div>
+chmod +x /home/unitree/start_g1_scanner.sh</pre></div>
 <div class="code-title">Verify the file was created correctly</div>
 <div class="codebox"><button onclick="copyCode('c29',this)">Copy</button>
-<pre id="c29">cat /home/unitree/g1_scanner_monitor.sh</pre></div>
+<pre id="c29">cat /home/unitree/start_g1_scanner.sh</pre></div>
 <div class="ok">&#10003; Check: the file contents match what you pasted. The last line should be <code>done</code>.</div>
 </div>
 
@@ -458,18 +471,16 @@ ls /home/unitree/cyclonedds_no_shm.xml</pre></div>
 </div>
 
 <div class="step">
-<div class="step-num">Step 7 &mdash; Quick sanity check (optional)</div>
-<p>Still in your SSH session:</p>
-<div class="codebox"><button onclick="copyCode('c31',this)">Copy</button>
-<pre id="c31">python3 /home/unitree/g1_camera_view.py --headless --stream-port 8080 &
-sleep 5
-ss -tlnp | grep 8080
-kill %1</pre></div>
-<div class="ok">&#10003; Check: port 8080 appears in the <code>ss</code> output, then kill it &mdash; the monitor manages it from now on.</div>
+<div class="step-num">Step 8 &mdash; Set up the cron @reboot auto-start job (on the Jetson)</div>
+<p>The G1 scanner monitor is configured to start automatically on every boot via cron. To verify or add the cron entry on the G1 Jetson:</p>
+<div class="codebox"><button onclick="copyCode('c31b',this)">Copy</button>
+<pre id="c31b">crontab -l</pre></div>
+<div class="ok">&#10003; Check: you see a line: <code>@reboot /home/unitree/start_g1_scanner.sh >> /tmp/g1_camera.log 2>&amp;1</code>. If missing, add it:<br>
+<code>(crontab -l 2>/dev/null; echo "@reboot /home/unitree/start_g1_scanner.sh >> /tmp/g1_camera.log 2>&1") | crontab -</code></div>
 </div>
 
 <div class="step">
-<div class="step-num">Step 8 &mdash; Exit your SSH session</div>
+<div class="step-num">Step 9 &mdash; Exit your SSH session</div>
 <div class="codebox"><button onclick="copyCode('c32',this)">Copy</button>
 <pre id="c32">exit</pre></div>
 <p>You are back on your laptop. Continue to Part 8.</p>
@@ -487,12 +498,12 @@ Then stop and restart the monitor (see Part 10).
 <h2>Part 8 &mdash; G1: start the scanner and open the stream</h2>
 
 <div class="step">
-<div class="step-num">Step 1 &mdash; Start the monitor from your laptop</div>
+<div class="step-num">Step 1 &mdash; Start the monitor from your laptop (if not already running)</div>
 <div class="codebox"><button onclick="copyCode('c33',this)">Copy</button>
 <pre id="c33">sshpass -p '123' ssh -o StrictHostKeyChecking=no unitree@192.168.123.164 \
-  'nohup bash /home/unitree/g1_scanner_monitor.sh > /dev/null 2>&1 & echo "Monitor started"'</pre></div>
-<p>The monitor runs an infinite loop. If the scanner exits for any reason, it restarts within 3 seconds automatically.</p>
-<div class="note">If <code>sshpass</code> is not installed: <code>sudo apt install sshpass</code></div>
+  'nohup bash /home/unitree/start_g1_scanner.sh > /dev/null 2>&1 & echo "Monitor started"'</pre></div>
+<p>The monitor runs an infinite loop. It auto-detects the camera device (/dev/video4, video5, video3, or video2), clears port 8080, and restarts the scanner if it exits for any reason.</p>
+<div class="note">If <code>sshpass</code> is not installed: <code>sudo apt install sshpass</code>. On a fresh reboot, the monitor is already running via cron &mdash; no manual start needed.</div>
 </div>
 
 <div class="step">
@@ -530,8 +541,8 @@ Then stop and restart the monitor (see Part 10).
   <tr><th>Marker ID</th><th>Action</th><th>Cooldown</th><th>Notes</th></tr>
   <tr><td><strong>0</strong></td><td>Zero torque</td><td>4 sec</td><td>&#9888; All motors off instantly. Robot collapses. <strong>Only use when robot is on the floor.</strong></td></tr>
   <tr><td><strong>1</strong></td><td>Damping (safe rest)</td><td>4 sec</td><td><strong>Always scan this first.</strong> Safe compliant rest state.</td></tr>
-  <tr><td><strong>2</strong></td><td>Locked standing (FSM 500)</td><td>15 sec</td><td>Stand-up sequence ~8 seconds. Must be in damping first. Browser may flicker and recover on its own.</td></tr>
-  <tr><td><strong>3</strong></td><td>Walking / running mode</td><td>4 sec</td><td>Enables continuous gait. Must be in locked standing (FSM 500) first.</td></tr>
+  <tr><td><strong>2</strong></td><td>Locked standing (FSM 500)</td><td>15 sec</td><td>Stand-up sequence ~10&ndash;12 seconds. Must be in damping first. Browser may flicker and recover on its own.</td></tr>
+  <tr><td><strong>3</strong></td><td>Walking / running mode</td><td>4 sec</td><td>Sends --start then --switch_move_mode=true (R2+A equivalent). Must be in locked standing (FSM 500) first.</td></tr>
   <tr><td><strong>4</strong></td><td>Wave above head</td><td>4 sec</td><td>Arm action 26. Requires FSM 500.</td></tr>
   <tr><td><strong>5</strong></td><td>Blow kiss</td><td>4 sec</td><td>Arm action 11. Requires FSM 500.</td></tr>
   <tr><td><strong>6</strong></td><td>Shake hand</td><td>4 sec</td><td>Arm action 27. Requires FSM 500.</td></tr>
@@ -544,9 +555,9 @@ Then stop and restart the monitor (see Part 10).
 <div class="ok">
 <ol>
   <li><strong>Scan marker 1</strong> &mdash; damping. Watch the log confirm &ldquo;Damping&rdquo;.</li>
-  <li><strong>Scan marker 2</strong> &mdash; robot stands up (~8 seconds). 15-second cooldown prevents re-triggering. Browser may go dark briefly and recover.</li>
+  <li><strong>Scan marker 2</strong> &mdash; robot stands up (~10&ndash;12 seconds). 15-second cooldown prevents re-triggering. Browser may go dark briefly and recover.</li></li>
   <li><strong>Scan markers 4&ndash;9</strong> one at a time &mdash; arm gestures. Wait for each to finish before the next.</li>
-  <li><strong>Scan marker 3</strong> &mdash; enables walking mode (optional).</li>
+  <li><strong>Scan marker 3</strong> &mdash; enables walking/running mode (sends --switch_move_mode=true, R2+A equivalent).</li>
   <li><strong>Scan marker 1</strong> &mdash; return to damping before finishing. Always end here.</li>
 </ol>
 </div>
@@ -612,7 +623,7 @@ Then stop and restart the monitor (see Part 10).
 <div class="code-title">Stop everything and start clean</div>
 <div class="codebox"><button onclick="copyCode('c39',this)">Copy</button>
 <pre id="c39">sshpass -p '123' ssh -o StrictHostKeyChecking=no unitree@192.168.123.164 \
-  'pkill -f g1_scanner_monitor; pkill -f g1_camera_view.py; echo "Stopped"'</pre></div>
+  'pkill -f start_g1_scanner; pkill -f g1_camera_view.py; echo "Stopped"'</pre></div>
 <p>Then restart with the monitor command from Part 8 Step 1.</p>
 
 <div class="code-title">Redeploy the scanner script after making changes on your laptop</div>
@@ -628,7 +639,7 @@ Then stop and restart the monitor (see Part 10).
 <table>
   <tr><th>Symptom</th><th>Fix</th></tr>
   <tr><td>Can&apos;t reach <code>http://192.168.12.1:8080/</code> after boot</td><td>Wait 30 seconds and refresh. SSH in and run <code>pgrep -a -f go2_aruco_autonomous.py</code>. If not running, check <code>/tmp/patrol.log</code> for startup errors. Confirm you are connected to the Go2 hotspot.</td></tr>
-  <tr><td>Script not running after reboot</td><td>SSH in and run <code>crontab -l</code> to verify the @reboot entry exists. If missing, re-add it (see Part 6 Step 6).</td></tr>
+  <tr><td>Script not running after reboot</td><td>SSH in and run <code>crontab -l</code> to verify the @reboot entry exists and points to <code>go2_patrol_monitor.sh</code>. If missing, re-add it (see Part 6 Step 6).</td></tr>
   <tr><td>Normal internet stopped working</td><td>Run <code>ip route</code> &mdash; your default route should still be via Wi-Fi. The wired profile uses <code>ipv4.never-default yes</code>.</td></tr>
   <tr><td>BotBrain container not found</td><td><code>sudo docker ps</code> &mdash; the container name may differ. Ask your instructor.</td></tr>
   <tr><td>ROS 2 camera topic has 0 publishers</td><td>Onboard camera integration is not complete. Use the laptop WebRTC path for the full ArUco demo.</td></tr>

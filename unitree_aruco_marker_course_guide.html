@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Unitree ArUco Marker Course Guide</title>
+<style>
+:root {
+  --blue:#1f4e79; --blue2:#2f75b5; --light:#eef6fc; --border:#d7e3ee;
+  --text:#1f2933; --muted:#52606d; --warn:#fff7e6; --warn-border:#d97706;
+}
+* { box-sizing:border-box; }
+body { margin:0; font-family:Arial,Helvetica,sans-serif; line-height:1.58; color:var(--text); background:#f4f7fa; }
+.container { max-width:1080px; margin:auto; background:white; padding:34px 24px 70px; }
+h1 { color:var(--blue); margin-bottom:.25rem; }
+h2 { color:var(--blue); border-top:2px solid var(--border); padding-top:1.4rem; margin-top:2.8rem; }
+h3 { color:var(--blue2); margin-bottom:.55rem; }
+.subtitle { color:var(--muted); }
+.topnote, .warning, .transition { padding:14px 16px; border-radius:8px; margin:16px 0; }
+.topnote { background:var(--light); border-left:5px solid var(--blue); }
+.warning { background:var(--warn); border-left:5px solid var(--warn-border); }
+.transition { background:#f6f8fa; border:1px solid var(--border); }
+.goal { font-size:1.04rem; background:#f8fbfe; padding:10px 12px; border-radius:6px; }
+.narration { margin:.62rem 0; font-size:1.04rem; }
+.module { scroll-margin-top:16px; }
+.toc { columns:2; padding-left:1.2rem; }
+.toc li { margin:.3rem 0; break-inside:avoid; }
+.toc a { color:var(--blue); text-decoration:none; }
+.code-title { font-weight:bold; margin-top:14px; }
+.codebox { position:relative; }
+pre { background:#111827; color:#f9fafb; padding:16px; border-radius:8px; overflow:auto; font-size:14px; white-space:pre-wrap; }
+.codebox button { position:absolute; right:8px; top:8px; border:0; border-radius:6px; padding:7px 11px; cursor:pointer; }
+li { margin:.35rem 0; }
+.checklist td, .checklist th { border:1px solid var(--border); padding:8px; text-align:left; }
+.checklist { border-collapse:collapse; width:100%; }
+.checklist th { background:var(--light); }
+@media (max-width:700px) { .toc { columns:1; } .container { padding:22px 14px 50px; } }
+@media print {
+  body { background:white; }
+  .container { max-width:none; padding:0; }
+  .codebox button { display:none; }
+  .module { page-break-before:always; }
+}
+
+.recording-grid {
+  display:grid;
+  grid-template-columns:minmax(0, 1fr) minmax(420px, 1.15fr);
+  gap:20px;
+  align-items:start;
+  margin:18px 0 24px;
+}
+.say-panel, .run-panel {
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:16px 18px;
+  background:#fff;
+}
+.say-panel {
+  background:#f8fbfe;
+  border-left:6px solid var(--blue);
+}
+.run-panel {
+  background:#fbfcfd;
+  border-left:6px solid var(--blue2);
+}
+.say-panel h3, .run-panel h3 {
+  margin-top:0;
+}
+.say-panel .narration {
+  margin:.75rem 0;
+}
+.recording-cue {
+  font-size:.78rem;
+  text-transform:uppercase;
+  letter-spacing:.07em;
+  font-weight:bold;
+  color:var(--blue2);
+  margin-bottom:.4rem;
+}
+.run-panel .code-title:first-of-type {
+  margin-top:0;
+}
+.module-flow-note {
+  background:#eef6fc;
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:10px 12px;
+  margin:12px 0 16px;
+  font-size:.95rem;
+}
+@media (max-width:900px) {
+  .recording-grid { grid-template-columns:1fr; }
+}
+@media print {
+  .recording-grid { grid-template-columns:1fr 1fr; gap:12px; }
+  .say-panel, .run-panel { break-inside:avoid; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Unitree ArUco Marker Course Guide</h1>
+<p class="subtitle"><strong>In-Depth Instructor Recording Script</strong><br/>
+Repository: https://github.com/TroyKaravias/unitree_robots_aruco_opencv</p>
+<div class="topnote">
+<strong>How to use this document:</strong> Read the “Read this on camera” paragraphs as your narration.
+Use “What to show on screen” as your shot list. Run the commands in the code boxes, then compare the
+result with the expected-result section. The Go2 course contains two connection paths: the laptop workflow over the Go2 hotspot/AP network, and a hardwired workflow that connects
+to the onboard NVIDIA Jetson/PC2 through SSH and the BotBrain ROS 2 environment. G1 modules cover the G1-specific connection, camera, scanner, and safe actions.
+</div><div class="topnote"><strong>Continuous recording layout:</strong> In modules with terminal steps, the left side now shows exactly what to say while the right side shows the commands to copy and run. Read down the left panel, run the matching commands on the right, then continue scrolling.</div><div class="topnote"><strong>Recording rule:</strong> Run the commands exactly as printed here. These command blocks are synchronized with the student guide, so students see the same repository path, virtual-environment name, package installation commands, marker-generation commands, Go2 IP setup, and Python interpreter.</div>
+<h2>Pre-recording checklist</h2>
+<table class="checklist">
+<tr><th>Item</th><th>Check</th></tr>
+<tr><td>Repository is current and named <code>unitree_robots_aruco_opencv</code></td><td>□</td></tr>
+<tr><td>Virtual environment installs successfully from <code>requirements.txt</code></td><td>□</td></tr>
+<tr><td>Markers 0–4 are printed and readable</td><td>□</td></tr>
+<tr><td>Go2 is charged and connected at 192.168.12.1</td><td>□</td></tr>
+<tr><td>Marker 0 is kept ready as the stop marker</td><td>□</td></tr>
+<tr><td>Recording area is clear of stairs, people, cables, and fragile objects</td><td>□</td></tr>
+<tr><td>Unitree app, browser UI, and old Python scripts are closed before WebRTC tests</td><td>□</td></tr>
+<tr><td>OBS records terminal text and camera windows clearly</td><td>□</td></tr>
+<tr><td>Separate backup clips are recorded for each robot action</td><td>□</td></tr>
+<tr><td>Ethernet adapter name and wired profile are confirmed before the Jetson lesson</td><td>□</td></tr>
+<tr><td>SSH access to the Go2 Jetson/PC2 is confirmed before recording</td><td>□</td></tr>
+<tr><td>The BotBrain <code>bringup</code> container is running</td><td>□</td></tr>
+<tr><td>G1 Jetson is reachable at 192.168.123.164</td><td>□</td></tr>
+<tr><td>G1 scanner monitor is started and http://192.168.123.164:8080/ shows the live stream</td><td>□</td></tr>
+<tr><td>Markers 0–9 are printed and readable for G1 demonstration</td><td>□</td></tr>
+<tr><td>G1 robot is in damping mode before recording any action demonstration</td><td>□</td></tr>
+<tr><td>Onboard autonomy begins disabled and L2 + Y stops custom motion without entering Damp mode</td><td>□</td></tr>
+</table>
+<h2>Course modules</h2>
+<ol class="toc">
+<li><a href="#m0">00 — Course Overview</a></li><li><a href="#m1">01 — What Is an ArUco Marker?</a></li><li><a href="#m2">02 — ArUco Dictionaries and Marker IDs</a></li><li><a href="#m3">03 — Creating and Printing ArUco Markers</a></li><li><a href="#m4">04 — What Is OpenCV?</a></li><li><a href="#m5">05 — Student Setup and GitHub Repository</a></li><li><a href="#m6">06 — Go2 Camera and WebRTC Setup</a></li><li><a href="#m7">07 — First Go2 ArUco Scanner</a></li><li><a href="#m8">08 — Marker-Controlled Go2 Actions</a></li><li><a href="#m9">09 — Marker Confirmation and Cooldowns</a></li><li><a href="#m10">10 — Go2 Patrol Behavior</a></li><li><a href="#m11">11 — Go2 Built-In Obstacle Avoidance</a></li><li><a href="#m12">12 — Stronger Go2 Corner Recovery</a></li><li><a href="#m13">13 — Full Go2 Autonomous ArUco Demo</a></li><li><a href="#m14">14 — G1 Adaptation Overview</a></li><li><a href="#m15">15 — G1 Connection and Starting the Scanner</a></li><li><a href="#m16">16 — G1 ArUco Scanner and Browser Stream</a></li><li><a href="#m17">17 — G1 Marker-Controlled Actions</a></li><li><a href="#m18">18 — Future Improvements</a></li>
+<li><a href="#m19">19 — Go2 Deployment Paths: AP Mode vs Jetson/PC2</a></li>
+<li><a href="#m20">20 — Hardwired Network and SSH into the Go2</a></li>
+<li><a href="#m21">21 — Download the Repository onto the Jetson/PC2</a></li>
+<li><a href="#m22">22 — BotBrain ROS 2, Controller Input, and Autonomy Controls</a></li>
+<li><a href="#m23">23 — Headless Auto-Start and Web Control UI</a></li>
+</ol>
+<section class="module" id="m0"><h2>00 — Course Overview</h2>
+<p class="goal"><strong>Video goal:</strong> Introduce the course, set expectations, explain the final outcome, and establish the difference between reusable vision code and robot-specific control code.</p>
+<h3>Read this on camera</h3>
+<p class="narration">Welcome to the Unitree Robotics G1 and Go2 ArUco OpenCV course.</p>
+<p class="narration">In this course, we are going to build a computer-vision system that allows a Unitree robot to recognize printed ArUco markers and react to them.</p>
+<p class="narration">The core idea is simple: the robot camera sends us video frames, OpenCV searches those frames for an ArUco marker, Python reads the marker ID, and then our program maps that ID to a robot behavior.</p>
+<p class="narration">The vision portion of the project is reusable. The robot connection and movement commands are robot-specific.</p>
+<p class="narration">The Go2 path covers the full pipeline: camera feed, ArUco detection, marker-triggered actions, autonomous patrol, built-in obstacle avoidance, and corner recovery.</p>
+<p class="narration">The G1 section covers the same ArUco and OpenCV concepts with its own connection, camera, and safe-action scripts.</p>
+<p class="narration">By the end of the Go2 section, the robot will be able to patrol, detect marker IDs zero through four, perform mapped actions, and use marker zero as the primary stop marker.</p>
+<h3>What to show on screen</h3><ol>
+<li>Show the repository page and briefly scroll through the folders.</li>
+<li>Show printed marker examples for IDs 0 through 4.</li>
+<li>Show a short preview clip of the Go2 detecting a marker and responding.</li>
+<li>Display the course flow diagram: camera feed → OpenCV detection → marker ID → Python behavior mapping → robot command layer.</li>
+</ol>
+<div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>Keep marker 0 available during every live robot demonstration.</li>
+</ul></div>
+<div class="transition"><strong>Suggested transition:</strong> “Now that this part is working, we can move to the next layer of the project.”</div>
+</section><section class="module" id="m1"><h2>01 — Student Setup and GitHub Repository</h2>
+<p class="goal"><strong>Video goal:</strong> Clone the repository, create the virtual environment, install dependencies, and verify imports.</p><div class="module-flow-note">Recording flow: read the left panel, run the matching command(s) on the right, verify the result, then continue downward.</div>
+<div class="recording-grid"><div class="say-panel"><div class="recording-cue">Say this while recording</div><h3>On-camera script</h3><p class="narration">Before we get into markers and detection, we need to set up the environment. Follow along and your machine will match the course exactly.</p><p class="narration">We begin inside a projects folder in the home directory.</p><p class="narration">Next, we clone the current course repository and enter the repository folder.</p><p class="narration">We create a Python virtual environment named venv. This keeps the packages for this project isolated from the rest of the system.</p><p class="narration">After activating the environment, we upgrade pip, install the bundled Unitree WebRTC package in editable mode, and install OpenCV contrib and NumPy.</p><p class="narration">The bundled Unitree WebRTC package installs its required dependencies, while OpenCV contrib provides the ArUco module used by this course.</p><p class="narration">Finally, we run two verification tests: one for the main imports and one for OpenCV ArUco support.</p></div><div class="run-panel"><div class="recording-cue">Copy and run beside the narration</div><h3>Terminal commands</h3><div class="code-title">Create projects folder</div><div class="codebox">
+<button onclick="copyCode('c4', this)">Copy</button>
+<pre id="c4">cd ~
+mkdir -p projects
+cd projects</pre>
+</div><div class="code-title">Clone the repository</div><div class="codebox">
+<button onclick="copyCode('c5', this)">Copy</button>
+<pre id="c5">git clone https://github.com/TroyKaravias/unitree_robots_aruco_opencv.git
+cd unitree_robots_aruco_opencv
+ls</pre>
+</div><div class="code-title">Create and activate venv</div><div class="codebox">
+<button onclick="copyCode('c6', this)">Copy</button>
+<pre id="c6">python3 -m venv venv
+source venv/bin/activate</pre>
+</div><div class="code-title">Upgrade pip and install requirements</div><div class="codebox">
+<button onclick="copyCode('c7', this)">Copy</button>
+<pre id="c7">pip install -U pip
+pip install -e ./unitree_webrtc_connect
+pip install opencv-contrib-python numpy</pre>
+</div><div class="code-title">Verify core imports</div><div class="codebox">
+<button onclick="copyCode('c8', this)">Copy</button>
+<pre id="c8">python3 - &lt;&lt;'PY'
+import cv2
+import numpy as np
+from unitree_webrtc_connect.webrtc_driver import (
+    UnitreeWebRTCConnection,
+    WebRTCConnectionMethod,
+)
+
+print("OpenCV version:", cv2.__version__)
+print("NumPy version:", np.__version__)
+print("unitree_webrtc_connect import: OK")
+
+if not hasattr(cv2, "aruco"):
+    raise SystemExit(
+        "ERROR: cv2.aruco is missing. "
+        "Install opencv-contrib-python."
+    )
+
+aruco_dict = cv2.aruco.getPredefinedDictionary(
+    cv2.aruco.DICT_4X4_50
+)
+params = cv2.aruco.DetectorParameters()
+detector = cv2.aruco.ArucoDetector(aruco_dict, params)
+
+print("DICT_4X4_50 detector created successfully.")
+print("Install test passed.")
+PY</pre>
+</div><div class="code-title">Verify ArUco support</div><div class="codebox">
+<button onclick="copyCode('c9', this)">Copy</button>
+<pre id="c9">python3 -c "import cv2; cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50); print('ArUco OK')" </pre>
+</div></div></div><h3>What to show on screen</h3><ol>
+<li>Start from a clean terminal.</li>
+<li>Show the repository URL clearly.</li>
+<li>Show the venv indicator appearing in the prompt.</li>
+<li>Show the unitree_webrtc_connect folder and the successful package-install output.</li>
+<li>Run both verification blocks.</li>
+</ol>
+<h3>Expected result</h3><ul>
+<li>The terminal prompt shows (venv).</li>
+<li>OpenCV and NumPy versions print successfully.</li>
+<li>unitree_webrtc_connect import prints OK.</li>
+<li>DICT_4X4_50 detector is created successfully.</li>
+</ul>
+<div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>If requirements.txt is missing, state that the repository copy is incomplete or outdated.</li>
+<li>Do not record over an existing development clone unless you intentionally want to demonstrate updating instead of cloning.</li>
+</ul></div>
+<div class="transition"><strong>Suggested transition:</strong> “Now that this part is working, we can move to the next layer of the project.”</div>
+</section><section class="module" id="m2"><h2>02 — What Is an ArUco Marker?</h2>
+<p class="goal"><strong>Video goal:</strong> Explain what ArUco markers are and why they are useful for robotics.</p>
+<h3>Read this on camera</h3>
+<p class="narration">An ArUco marker is a square visual marker made from a black border and an internal binary pattern.</p>
+<p class="narration">Each valid pattern represents a numeric marker ID.</p>
+<p class="narration">To a person, two markers may look very similar. To OpenCV, the internal black-and-white pattern identifies exactly which marker is being shown.</p>
+<p class="narration">ArUco markers are useful because they are inexpensive, easy to print, and fast for a camera to detect.</p>
+<p class="narration">In this course, we use them as visual command signs. A robot can see a marker, identify its number, and select a matching behavior.</p>
+<p class="narration">The marker itself does not contain a robot command. Our Python code decides what each marker means.</p>
+<h3>What to show on screen</h3><ol>
+<li>Hold up or display marker IDs 0, 1, 2, 3, and 4.</li>
+<li>Zoom in on the black border and internal grid.</li>
+<li>Place two markers side by side and point out that their patterns differ.</li>
+<li>Show the marker-to-action table used later in the course.</li>
+</ol>
+<div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>Avoid overcomplicating this lesson with pose estimation.</li>
+<li>Emphasize that the ID-to-action mapping is chosen by the programmer.</li>
+</ul></div>
+<div class="transition"><strong>Suggested transition:</strong> “Now that this part is working, we can move to the next layer of the project.”</div>
+</section><section class="module" id="m3"><h2>03 — ArUco Dictionaries and Marker IDs</h2>
+<p class="goal"><strong>Video goal:</strong> Explain DICT_4X4_50 and why the generator and detector must use the same dictionary.</p><div class="module-flow-note">Recording flow: read the left panel, run the matching command(s) on the right, verify the result, then continue downward.</div>
+<div class="recording-grid"><div class="say-panel"><div class="recording-cue">Say this while recording</div><h3>On-camera script</h3><p class="narration">ArUco markers are organized into dictionaries.</p><p class="narration">A dictionary defines the marker grid size and the collection of valid marker patterns.</p><p class="narration">For this course, we use OpenCV's DICT_4X4_50 dictionary.</p><p class="narration">The 4X4 portion means the internal marker pattern uses a four-by-four binary grid.</p><p class="narration">The 50 means the dictionary contains marker IDs from zero through forty-nine.</p><p class="narration">The complete course generates IDs zero through nine; the Go2 and G1 lessons use different subsets of those markers.</p><p class="narration">The marker generator and the marker detector must use the same dictionary. If we generate a marker from one dictionary and try to detect it with another, detection may fail.</p></div><div class="run-panel"><div class="recording-cue">Copy and run beside the narration</div><h3>Terminal commands</h3><div class="code-title">Quick dictionary test</div><div class="codebox">
+<button onclick="copyCode('c1', this)">Copy</button>
+<pre id="c1">python3 - &lt;&lt;'PY'
+import cv2
+
+aruco_dict = cv2.aruco.getPredefinedDictionary(
+    cv2.aruco.DICT_4X4_50
+)
+params = cv2.aruco.DetectorParameters()
+detector = cv2.aruco.ArucoDetector(aruco_dict, params)
+
+print("DICT_4X4_50 detector created successfully.")
+PY</pre>
+</div><div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>Explain the concept, but do not imply that DICT_4X4_50 is the only valid dictionary.</li>
+</ul></div><div class="transition"><strong>Suggested transition:</strong> “Now that this part is working, we can move to the next layer of the project.”</div></div></div><h3>What to show on screen</h3><ol>
+<li>Open the marker generator script and point to DICT_4X4_50.</li>
+<li>Open the scanner script and point to the same dictionary.</li>
+<li>Note that the aruco_markers output folder will be populated in the next module when we run the generator.</li>
+</ol>
+</section><section class="module" id="m4"><h2>04 — Creating and Printing ArUco Markers</h2>
+<p class="goal"><strong>Video goal:</strong> Generate marker images for IDs 0–4 and explain practical printing considerations.</p><div class="module-flow-note">Recording flow: read the left panel, run the matching command(s) on the right, verify the result, then continue downward.</div>
+<div class="recording-grid"><div class="say-panel"><div class="recording-cue">Say this while recording</div><h3>On-camera script</h3><p class="narration">Now we will generate the actual marker image files used in the course.</p><p class="narration">The repository includes a marker generation script.</p><p class="narration">When we run it, the script creates print-ready files for marker IDs zero through nine and saves them in aruco_markers/printables.</p><p class="narration">After generation, we should verify that all five files exist.</p><p class="narration">For reliable detection, print the markers with the full black border visible, avoid stretching them, and keep some white space around each marker.</p><p class="narration">Glossy reflections, very small print sizes, motion blur, and extreme angles can reduce detection reliability.</p></div><div class="run-panel"><div class="recording-cue">Copy and run beside the narration</div><h3>Terminal commands</h3><div class="code-title">Generate markers</div><div class="codebox">
+<button onclick="copyCode('c2', this)">Copy</button>
+<pre id="c2">for i in 0 1 2 3 4 5 6 7 8 9; do
+  python3 scripts/generate_printable_marker.py --id "$i" --size-in 5.5 --dpi 300
+done
+ls aruco_markers/printables</pre>
+</div><div class="code-title">List generated files</div><div class="codebox">
+<button onclick="copyCode('c3', this)">Copy</button>
+<pre id="c3">ls aruco_markers/printables</pre>
+</div></div></div><h3>What to show on screen</h3><ol>
+<li>Run the generator.</li>
+<li>Open the aruco_markers folder.</li>
+<li>Open each image briefly.</li>
+<li>Show a correctly printed marker and an example with the border cropped.</li>
+</ol>
+<h3>Expected result</h3><ul>
+<li>aruco_4x4_50_id_0.png</li>
+<li>aruco_4x4_50_id_1.png</li>
+<li>aruco_4x4_50_id_2.png</li>
+<li>aruco_4x4_50_id_3.png</li>
+<li>aruco_4x4_50_id_4.png</li>
+</ul>
+<div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>Keep the filenames visible long enough for students to compare their output.</li>
+</ul></div>
+<div class="transition"><strong>Suggested transition:</strong> “Now that this part is working, we can move to the next layer of the project.”</div>
+</section><section class="module" id="m5"><h2>05 — What Is OpenCV?</h2>
+<p class="goal"><strong>Video goal:</strong> Introduce OpenCV's role in the project without overwhelming beginners.</p>
+<h3>Read this on camera</h3>
+<p class="narration">OpenCV is the computer-vision library that processes the robot's camera frames.</p>
+<p class="narration">In this project, OpenCV receives an image, searches for ArUco marker corners, identifies valid marker IDs, and lets us draw boxes and labels on the display.</p>
+<p class="narration">OpenCV does not control the robot by itself.</p>
+<p class="narration">It only gives our Python program information about what the camera sees.</p>
+<p class="narration">Our Python code then decides whether to print an ID, wait for confirmation, apply a cooldown, or send a robot command.</p>
+<h3>What to show on screen</h3><ol>
+<li>Display a raw camera frame.</li>
+<li>Display a detected frame with marker borders and ID text.</li>
+<li>Open the scanner script and point to detector.detectMarkers or the detector call used in the script.</li>
+<li>Point to the drawing code and the marker ID extraction.</li>
+</ol>
+<div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>Keep this lesson focused on the actual course pipeline.</li>
+<li>Do not introduce advanced calibration unless you later add pose estimation.</li>
+</ul></div>
+<div class="transition"><strong>Suggested transition:</strong> “Now that this part is working, we can move to the next layer of the project.”</div>
+</section><section class="module" id="m6"><h2>06 — Go2 Camera and WebRTC Setup</h2>
+<p class="goal"><strong>Video goal:</strong> Connect to the Go2 network, verify reachability, and explain the WebRTC camera path.</p><div class="module-flow-note">Recording flow: read the left panel, run the matching command(s) on the right, verify the result, then continue downward.</div>
+<div class="recording-grid"><div class="say-panel"><div class="recording-cue">Say this while recording</div><h3>On-camera script</h3><p class="narration">Before running the camera script, the computer must be connected to the Go2's local Wi-Fi or hotspot network.</p><p class="narration">In this course, the Go2 is reached at 192.168.12.1.</p><p class="narration">We first use ping to confirm basic network communication.</p><p class="narration">A successful ping does not prove that the complete WebRTC camera path is working, but it confirms that the laptop can reach the robot.</p><p class="narration">The scanner script uses the Unitree WebRTC connection package to connect to the Go2 and receive camera frames.</p><p class="narration">The camera callback receives frames, OpenCV processes them, and the display window shows the live detection result.</p></div><div class="run-panel"><div class="recording-cue">Copy and run beside the narration</div><h3>Terminal commands</h3><div class="code-title">Ping the Go2</div><div class="codebox">
+<button onclick="copyCode('c10', this)">Copy</button>
+<pre id="c10">export UNITREE_ROBOT_IP=192.168.12.1
+ping -c 4 "$UNITREE_ROBOT_IP" </pre>
+</div></div></div><h3>What to show on screen</h3><ol>
+<li>Show the active Wi-Fi connection.</li>
+<li>Run ping and allow several successful replies.</li>
+<li>Stop ping with Control+C.</li>
+<li>Open the Go2 scanner script and point to the connection method and camera callback.</li>
+</ol>
+<h3>Expected result</h3><ul>
+<li>Replies are received from 192.168.12.1.</li>
+<li>No destination unreachable error appears.</li>
+</ul>
+<div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>If WebRTC times out, close the Unitree app, browser-based robot UI, and older Python scripts before retrying.</li>
+<li>Use the course address 192.168.12.1.</li>
+</ul></div>
+<div class="transition"><strong>Suggested transition:</strong> “Now that this part is working, we can move to the next layer of the project.”</div>
+</section><section class="module" id="m7"><h2>07 — First Go2 ArUco Scanner</h2>
+<p class="goal"><strong>Video goal:</strong> Run detection-only scanning, explain the display, and verify marker IDs before sending actions.</p><div class="module-flow-note">Recording flow: read the left panel, run the matching command(s) on the right, verify the result, then continue downward.</div>
+<div class="recording-grid"><div class="say-panel"><div class="recording-cue">Say this while recording</div><h3>On-camera script</h3><p class="narration">This is the first live ArUco detection test using the Go2 camera.</p><p class="narration">The purpose of this script is to verify the camera and marker detector before adding autonomous behavior.</p><p class="narration">When a valid marker appears, OpenCV draws its outline and displays the detected ID.</p><p class="narration">At this stage, focus on detection reliability: distance, lighting, angle, print quality, and motion blur.</p><p class="narration">Move the marker slowly at first and confirm that the ID remains correct.</p><p class="narration">Detection-only testing is an important safety step because it separates vision problems from robot-command problems.</p></div><div class="run-panel"><div class="recording-cue">Copy and run beside the narration</div><h3>Terminal commands</h3><div class="code-title">Run the Go2 scanner</div><div class="codebox">
+<button onclick="copyCode('c11', this)">Copy</button>
+<pre id="c11">python3 scripts/go2/go2_aruco_scan.py</pre>
+</div></div></div><h3>What to show on screen</h3><ol>
+<li>Run the scanner.</li>
+<li>Present the Go2 marker IDs used by the current script one at a time.</li>
+<li>Show the detected ID on screen.</li>
+<li>Test a moderate distance and slight angle.</li>
+<li>Close the window using the script's normal exit key.</li>
+</ol>
+<h3>Expected result</h3><ul>
+<li>A live camera window opens.</li>
+<li>Marker borders and IDs appear when markers enter the frame.</li>
+<li>IDs match the printed markers.</li>
+</ul>
+<div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>If a QFontDatabase warning appears but the window opens, explain that it can usually be ignored.</li>
+<li>Do not move the robot during a detection-only demonstration unless the script intentionally maps actions.</li>
+</ul></div>
+<div class="transition"><strong>Suggested transition:</strong> “Now that this part is working, we can move to the next layer of the project.”</div>
+</section><section class="module" id="m8"><h2>08 — Marker-Controlled Go2 Actions</h2>
+<p class="goal"><strong>Video goal:</strong> Explain and demonstrate the beginner marker-to-action mapping.</p>
+<h3>Read this on camera</h3>
+<p class="narration">Now we connect marker detection to Go2 actions.</p>
+<p class="narration">For the beginner course, marker zero is the primary stop marker.</p>
+<p class="narration">Marker one maps to StandUp.</p>
+<p class="narration">Marker two maps to Sit, crouch, or lay-down behavior depending on the command used in the current script.</p>
+<p class="narration">Marker three triggers a short, cautious forward movement.</p>
+<p class="narration">Marker four triggers a short turn or search action.</p>
+<p class="narration">The important programming idea is the mapping structure. The detected marker ID becomes a key that selects a specific action.</p>
+<p class="narration">Always demonstrate one action at a time and return the robot to a safe state before showing the next marker.</p>
+<h3>What to show on screen</h3><ol>
+<li>Open the marker handling section of the script.</li>
+<li>Point to each ID condition or mapping entry.</li>
+<li>Demonstrate IDs 1 and 2 first.</li>
+<li>Demonstrate short movement actions only in a clear area.</li>
+<li>Finish by showing marker 0.</li>
+</ol>
+<h3>Expected result</h3><ul>
+<li>Marker 0 stops movement.</li>
+<li>Marker 1 triggers the configured stand action.</li>
+<li>Marker 2 triggers the configured sit/crouch/lay action.</li>
+<li>Marker 3 performs only a brief forward motion.</li>
+<li>Marker 4 performs only a brief turn/search motion.</li>
+</ul>
+<div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>Read the current script before filming so the narration matches the actual command used for marker 2.</li>
+<li>Marker 0 publishes zero wireless controller values to stop motion. It does NOT call StopMove — calling StopMove locks out the physical controller and requires a power cycle to restore it.</li>
+<li>Keep enough open space around the Go2.</li>
+</ul></div>
+<div class="transition"><strong>Suggested transition:</strong> “Now that this part is working, we can move to the next layer of the project.”</div>
+</section><section class="module" id="m9"><h2>09 — Marker Confirmation and Cooldowns</h2>
+<p class="goal"><strong>Video goal:</strong> Explain how confirmation counts and cooldown timers prevent false or repeated triggers.</p>
+<h3>Read this on camera</h3>
+<p class="narration">A real camera stream contains noise, blur, and frames where a marker may only be visible briefly.</p>
+<p class="narration">If we trigger an action from a single frame, the robot may react to an unstable or accidental detection.</p>
+<p class="narration">A marker confirmation count requires the same marker to be detected across multiple frames before the action is accepted.</p>
+<p class="narration">A cooldown timer prevents the same action from firing repeatedly while the marker remains in view.</p>
+<p class="narration">Together, confirmation and cooldown logic make the system more stable and predictable.</p>
+<p class="narration">The exact values can be tuned. Higher confirmation counts reduce accidental triggers but may make the robot respond more slowly.</p>
+<h3>What to show on screen</h3><ol>
+<li>Open the variables controlling confirmation and cooldown.</li>
+<li>Show the counter increasing while a marker remains visible.</li>
+<li>Hold the marker in view after triggering and explain why the action does not repeat immediately.</li>
+<li>Remove and reintroduce the marker after the cooldown.</li>
+</ol>
+<div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>Use the exact variable names from the current script during recording.</li>
+<li>Avoid claiming a specific confirmation number unless it matches the file being recorded.</li>
+</ul></div>
+<div class="transition"><strong>Suggested transition:</strong> “Now that this part is working, we can move to the next layer of the project.”</div>
+</section><section class="module" id="m10"><h2>10 — Go2 Patrol Behavior</h2>
+<p class="goal"><strong>Video goal:</strong> Explain the robot state flow for forward movement, scanning, and turning.</p><div class="module-flow-note">Recording flow: read the left panel, run the matching command(s) on the right, verify the result, then continue downward.</div>
+<div class="recording-grid"><div class="say-panel"><div class="recording-cue">Say this while recording</div><h3>On-camera script</h3><p class="narration">The autonomous script adds a patrol behavior around the marker detector.</p><p class="narration">The robot moves forward cautiously while continuing to process camera frames.</p><p class="narration">When the behavior decides it needs to search, it turns and scans for markers.</p><p class="narration">If a marker is detected, the marker action takes priority over the normal patrol flow.</p><p class="narration">The patrol logic is organized with robot states. This makes it easier to understand what the robot is currently doing and why.</p><p class="narration">Typical states include searching, moving, turning, recovering, and executing a marker action.</p></div><div class="run-panel"><div class="recording-cue">Copy and run beside the narration</div><h3>Terminal commands</h3><div class="code-title">Run the autonomous demo</div><div class="codebox">
+<button onclick="copyCode('c12', this)">Copy</button>
+<pre id="c12">python3 scripts/go2/go2_aruco_autonomous.py</pre>
+</div><div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>Use a spotter when possible.</li>
+<li>Start with low speeds and a large clear area.</li>
+<li>Keep marker 0 visible and ready.</li>
+</ul></div><div class="transition"><strong>Suggested transition:</strong> “Now that this part is working, we can move to the next layer of the project.”</div></div></div><h3>What to show on screen</h3><ol>
+<li>Open the autonomous script and point to the state variables.</li>
+<li>Show the forward and turn speed settings.</li>
+<li>Run the robot in an open, controlled area.</li>
+<li>Overlay or verbally identify state changes as they happen.</li>
+</ol>
+</section><section class="module" id="m11"><h2>11 — Go2 Built-In Obstacle Avoidance</h2>
+<p class="goal"><strong>Video goal:</strong> Run the obstacle-avoidance check and explain its role and limitations.</p><div class="module-flow-note">Recording flow: read the left panel, run the matching command(s) on the right, verify the result, then continue downward.</div>
+<div class="recording-grid"><div class="say-panel"><div class="recording-cue">Say this while recording</div><h3>On-camera script</h3><p class="narration">Before relying on autonomous movement, we verify the Go2's built-in obstacle avoidance state.</p><p class="narration">The repository includes a dedicated obstacle-avoidance check script.</p><p class="narration">This test confirms that the project can connect and request the expected obstacle-avoidance setting.</p><p class="narration">Built-in obstacle avoidance is an additional safety layer, but it is not a guarantee that the robot will avoid every object, corner, narrow gap, reflective surface, or low obstacle.</p><p class="narration">We still use conservative speeds, clear space, active supervision, and a stop marker.</p></div><div class="run-panel"><div class="recording-cue">Copy and run beside the narration</div><h3>Terminal commands</h3><div class="code-title">Run obstacle avoidance check</div><div class="codebox">
+<button onclick="copyCode('c13', this)">Copy</button>
+<pre id="c13">python3 scripts/go2/go2_obstacle_avoidance_check.py</pre>
+</div><div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>Do not present obstacle avoidance as fail-safe.</li>
+<li>Keep the operator within reach of a physical or software stop method.</li>
+</ul></div><div class="transition"><strong>Suggested transition:</strong> “Now that this part is working, we can move to the next layer of the project.”</div></div></div><h3>What to show on screen</h3><ol>
+<li>Run the obstacle check script.</li>
+<li>Read the terminal output.</li>
+<li>Show the area used for the autonomous test.</li>
+<li>Point out objects that may be difficult for any obstacle system.</li>
+</ol>
+</section><section class="module" id="m12"><h2>12 — Stronger Go2 Corner Recovery</h2>
+<p class="goal"><strong>Video goal:</strong> Explain why the robot can become stuck and how backup/turn recovery improves patrol behavior.</p>
+<h3>Read this on camera</h3>
+<p class="narration">Built-in obstacle avoidance may stop the robot near a wall or corner, but stopping alone does not always help it escape.</p>
+<p class="narration">The stronger recovery behavior adds a sequence designed to move the robot away from a blocked position.</p>
+<p class="narration">A typical recovery sequence is: stop, back up, turn, scan, and then resume patrol.</p>
+<p class="narration">The project also includes logic for a second recovery when two recoveries happen close together.</p>
+<p class="narration">The second recovery uses a different or smaller turn so the robot does not repeat exactly the same failed path.</p>
+<p class="narration">This is behavior-level recovery. It does not replace full mapping or advanced navigation.</p>
+<h3>What to show on screen</h3><ol>
+<li>Point to the recovery timing and turn settings in the script.</li>
+<li>Demonstrate recovery with a safe, wide obstacle arrangement.</li>
+<li>Show the first recovery.</li>
+<li>Show or explain the second-recovery condition.</li>
+<li>Display the robot state in the terminal if the script prints it.</li>
+</ol>
+<div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>Do not intentionally wedge the robot into a dangerous space.</li>
+<li>Use lightweight obstacles and maintain clearance from stairs.</li>
+</ul></div>
+<div class="transition"><strong>Suggested transition:</strong> “Now that this part is working, we can move to the next layer of the project.”</div>
+</section><section class="module" id="m13"><h2>13 — Full Go2 Autonomous ArUco Demo</h2>
+<p class="goal"><strong>Video goal:</strong> Combine setup, patrol, detection, obstacle behavior, recovery, and marker actions in one complete demonstration.</p><div class="module-flow-note">Recording flow: read the left panel, run the matching command(s) on the right, verify the result, then continue downward.</div>
+<div class="recording-grid"><div class="say-panel"><div class="recording-cue">Say this while recording</div><h3>On-camera script</h3><p class="narration">This final Go2 demonstration combines the complete course pipeline.</p><p class="narration">The computer is connected to the Go2 network, the virtual environment is active, and the autonomous script is running.</p><p class="narration">The robot patrols while continuously processing camera frames.</p><p class="narration">If it becomes blocked, it can use the recovery sequence.</p><p class="narration">When it sees a marker, the marker mapping selects the matching action.</p><p class="narration">Marker zero remains the primary visual stop command.</p><p class="narration">Watch the terminal and camera window together. The camera view explains what the robot sees, while the terminal messages explain the active behavior state.</p></div><div class="run-panel"><div class="recording-cue">Copy and run beside the narration</div><h3>Terminal commands</h3><div class="code-title">Activate environment</div><div class="codebox">
+<button onclick="copyCode('c14', this)">Copy</button>
+<pre id="c14">cd ~/projects/unitree_robots_aruco_opencv
+source venv/bin/activate</pre>
+</div><div class="code-title">Optional obstacle check</div><div class="codebox">
+<button onclick="copyCode('c15', this)">Copy</button>
+<pre id="c15">python3 scripts/go2/go2_obstacle_avoidance_check.py</pre>
+</div><div class="code-title">Run full demo</div><div class="codebox">
+<button onclick="copyCode('c16', this)">Copy</button>
+<pre id="c16">python3 scripts/go2/go2_aruco_autonomous.py</pre>
+</div><div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>Record a clean backup take of each action separately.</li>
+<li>Do not depend on a single uninterrupted autonomous run for all footage.</li>
+<li>Press <strong>q</strong> in the cv2 window to exit cleanly when running from the laptop. CTRL+C also works from the terminal.</li>
+<li>The script starts in standby. Patrol begins when Start is clicked in the browser at <code>http://192.168.12.1:8080</code> or via D-pad Down+A on the physical remote.</li>
+</ul></div><div class="transition"><strong>Suggested transition:</strong> “Now that this part is working, we can move to the next layer of the project.”</div></div></div><h3>What to show on screen</h3><ol>
+<li>Show the active venv and working directory.</li>
+<li>Run the obstacle check first if that is part of your normal sequence.</li>
+<li>Run the autonomous script.</li>
+<li>Demonstrate at least three marker actions.</li>
+<li>Demonstrate one recovery.</li>
+<li>End with marker 0 and stop the program cleanly.</li>
+</ol>
+</section><section class="module" id="m14"><h2>14 — G1 Adaptation Overview</h2>
+<p class="goal"><strong>Video goal:</strong> Explain how the G1 differs from the Go2 and describe the G1-specific architecture that is now fully working.</p>
+<h3>Read this on camera</h3>
+<p class="narration">The G1 humanoid reuses the same ArUco and OpenCV detection pipeline as the Go2.</p>
+<p class="narration">The dictionary, detector parameters, confirmation count, and cooldown logic all transfer directly. DICT_4X4_50, three-frame confirmation, and a four-second cooldown work the same way on both robots.</p>
+<p class="narration">The robot-specific layer is completely different from the Go2.</p>
+<p class="narration">The G1 camera is an Intel RealSense D435i accessed directly through V4L2 on the onboard Jetson NX. There is no WebRTC connection. The camera appears as /dev/video4.</p>
+<p class="narration">Robot commands go through two compiled binaries on the Jetson: the loco client for locomotion state transitions and the arm action binary for built-in gestures. Both use CycloneDDS for communication with the robot body.</p>
+<p class="narration">The G1 scanner runs headless on the Jetson and serves a browser-based MJPEG stream at port 8080. You open the stream on any device on the same network. No OpenCV window or laptop is needed once the scanner is running.</p>
+<p class="narration">An auto-restart monitor script keeps the scanner alive even if it exits unexpectedly.</p>
+<h3>What to show on screen</h3><ol>
+<li>Show the scripts/g1 folder in the repository.</li>
+<li>Compare the Go2 WebRTC path with the G1 V4L2 plus browser-stream path.</li>
+<li>Show the browser stream at http://192.168.123.164:8080/ with the camera feed and log panel visible.</li>
+</ol>
+<div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>Go2 WebRTC commands and connection code are not compatible with the G1. Use only the G1-specific scripts in scripts/g1.</li>
+<li>A realsense2_camera_node ROS process starts automatically on the Jetson at boot and holds the camera device. The scanner script detects and kills it automatically on startup.</li>
+</ul></div>
+<div class="transition"><strong>Suggested transition:</strong> "Now that we understand the G1 architecture, we can connect and start the scanner."</div>
+</section><section class="module" id="m15"><h2>15 — G1 Connection and Starting the Scanner</h2>
+<p class="goal"><strong>Video goal:</strong> SSH into the G1 Jetson, start the scanner monitor, and confirm the live browser stream.</p><div class="module-flow-note">Recording flow: read the left panel, run the matching command(s) on the right, verify the result, then continue downward.</div>
+<div class="recording-grid"><div class="say-panel"><div class="recording-cue">Say this while recording</div><h3>On-camera script</h3><p class="narration">The G1 Jetson NX is reachable at 192.168.123.164. The username is unitree and the password is 123.</p><p class="narration">Before starting the scanner, confirm the Jetson is reachable with ping.</p><p class="narration">The scanner script is already deployed on the Jetson at /home/unitree/g1_camera_view.py. A monitor script at /home/unitree/start_g1_scanner.sh wraps it in an automatic restart loop so the stream recovers on its own if the process exits. It also auto-detects the camera device at startup, trying /dev/video4, /dev/video5, /dev/video3, and /dev/video2 in order — no manual device configuration needed.</p><p class="narration">The monitor script is set up as a cron @reboot job on the G1 Jetson, so the scanner starts automatically on every boot. Start it manually with nohup if needed, and it continues running after the SSH session closes. After a few seconds, open a browser on any device on the same network and navigate to http://192.168.123.164:8080/. The left panel shows the live camera feed with ArUco detection overlay. The right panel shows the scan log.</p><p class="narration">On a cold boot, the monitor clears port 8080 and auto-detects the first available camera device. No manual intervention is needed.</p></div><div class="run-panel"><div class="recording-cue">Copy and run beside the narration</div><h3>Terminal commands</h3><div class="code-title">Verify the Jetson is reachable</div><div class="codebox">
+<button onclick="copyCode('cg1', this)">Copy</button>
+<pre id="cg1">ping -c 4 192.168.123.164</pre>
+</div><div class="code-title">SSH into the G1 Jetson</div><div class="codebox">
+<button onclick="copyCode('cg2', this)">Copy</button>
+<pre id="cg2">ssh unitree@192.168.123.164
+# password: 123</pre>
+</div><div class="code-title">Start the scanner monitor (run on the Jetson)</div><div class="codebox">
+<button onclick="copyCode('cg3', this)">Copy</button>
+<pre id="cg3">nohup bash /home/unitree/start_g1_scanner.sh &gt; /dev/null 2&gt;&amp;1 &amp;
+echo "Monitor started"</pre>
+</div><div class="code-title">Check that the stream is up</div><div class="codebox">
+<button onclick="copyCode('cg4', this)">Copy</button>
+<pre id="cg4">ss -tlnp | grep 8080
+tail -5 /tmp/g1_camera.log</pre>
+</div><div class="code-title">One-liner from laptop (no manual SSH needed)</div><div class="codebox">
+<button onclick="copyCode('cg5', this)">Copy</button>
+<pre id="cg5">sshpass -p '123' ssh -o StrictHostKeyChecking=no unitree@192.168.123.164   'nohup bash /home/unitree/start_g1_scanner.sh &gt; /dev/null 2&gt;&amp;1 &amp; echo "Started"'</pre>
+</div></div></div><h3>What to show on screen</h3><ol>
+<li>Run ping to confirm the Jetson is reachable.</li>
+<li>SSH into the Jetson and show the prompt.</li>
+<li>Start the monitor script.</li>
+<li>Open the browser stream and show the live camera feed with the log panel.</li>
+</ol>
+<h3>Expected result</h3><ul>
+<li>Log shows: [INFO] Camera: /dev/video4 (or video5/video3/video2 — auto-detected) @ 640x480 30fps</li>
+<li>Log shows: [STREAM] http://192.168.123.164:8080/</li>
+<li>Port 8080 is listening in the ss output.</li>
+<li>Browser stream opens and shows the live camera feed.</li>
+</ul>
+<div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>If /dev/video* devices do not appear, the Jetson may still be booting. Wait 30–60 seconds after power-on and retry.</li>
+<li>If the browser stream does not open, confirm that the viewing device is on the 192.168.123.x subnet.</li>
+</ul></div>
+<div class="transition"><strong>Suggested transition:</strong> "The stream is live. Now we can show markers to the camera and see them detected in the browser."</div>
+</section><section class="module" id="m16"><h2>16 — G1 ArUco Scanner and Browser Stream</h2>
+<p class="goal"><strong>Video goal:</strong> Show ArUco marker detection live in the G1 browser stream and explain the confirmation and cooldown system.</p>
+<h3>Read this on camera</h3>
+<p class="narration">With the scanner running, open a browser to http://192.168.123.164:8080/.</p>
+<p class="narration">The left panel shows the live MJPEG stream from the RealSense camera. When a marker enters the frame, OpenCV draws its border and displays the marker ID and confirmation count above it.</p>
+<p class="narration">The scanner uses DICT_4X4_50 and requires a marker to appear in three consecutive frames before it is confirmed. Once confirmed, the mapped action fires and a four-second cooldown begins. The same marker cannot trigger again until the cooldown expires. Marker 2 uses a fifteen-second cooldown to prevent re-triggering during the stand-up sequence.</p>
+<p class="narration">The right panel is the scan log. It shows real-time status: which markers are visible, which action is executing, and the running frame count.</p>
+<p class="narration">During this phase, show markers zero through nine one at a time. The scanner detects all of them, but action results depend on the robot state covered in the next module.</p>
+<h3>What to show on screen</h3><ol>
+<li>Open http://192.168.123.164:8080/ in a browser.</li>
+<li>Show the left camera panel with the detection overlay drawn on a marker.</li>
+<li>Show the right log panel updating in real time.</li>
+<li>Hold a marker in front of the camera long enough to reach the confirm count and show it appear in the log.</li>
+<li>Remove the marker and show the cooldown behavior.</li>
+</ol>
+<h3>Expected result</h3><ul>
+<li>Marker border and ID label are drawn when a marker enters the frame.</li>
+<li>The frame confirmation counter increments each frame.</li>
+<li>Confirmed markers appear in the right log panel.</li>
+<li>The frame counter increments continuously while the scanner is running.</li>
+</ul>
+<div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>Marker 0 triggers zero torque and the robot collapses. Keep it away from the camera while the robot is standing.</li>
+<li>Marker 2 starts the stand-up sequence. Do not show it again while the robot is rising.</li>
+</ul></div>
+<div class="transition"><strong>Suggested transition:</strong> "Detection is working. Now we connect all ten marker IDs to their robot actions."</div>
+</section><section class="module" id="m17"><h2>17 — G1 Marker-Controlled Actions</h2>
+<p class="goal"><strong>Video goal:</strong> Demonstrate the complete G1 marker-to-action mapping and the correct workflow from rest through standing to gestures.</p>
+<h3>Read this on camera</h3>
+<p class="narration">The G1 has ten mapped marker IDs, zero through nine.</p>
+<p class="narration">Markers zero and one are safety controls. Marker zero cuts all motor torque and the robot collapses. Use it only when the robot is already on the floor. Marker one enables damping mode, the safe compliant resting state. Always scan marker one first before any other action.</p>
+<p class="narration">Marker two is the stand-up sequence. It sends stand-up to bring the robot to FSM state 4, waits up to ten seconds for the robot to physically rise, then sends start to transition to FSM 500, locked standing. The full sequence takes about twelve seconds. The browser stream may restart briefly during this transition and recover automatically.</p>
+<p class="narration">Marker three enables walking and running mode from locked standing. It sends --start first to ensure FSM 500, then calls --switch_move_mode=true, which is the software equivalent of pressing R2+A on the physical controller. The robot then walks freely.</p>
+<p class="narration">Markers four through nine trigger built-in arm gestures using the Unitree arm action binary. These require the robot to be in locked standing mode, FSM 500. Scan marker two first to reach that state.</p>
+<h3>What to show on screen</h3><ol>
+<li>Show the marker table before starting any live demonstration.</li>
+<li>Start with the robot resting. Scan marker 1 to confirm damping.</li>
+<li>Scan marker 2 and narrate the stand-up sequence as it happens.</li>
+<li>From locked standing, scan each gesture marker one at a time.</li>
+<li>Scan marker 1 to return to damping before ending the demonstration.</li>
+</ol>
+<h3>G1 marker mapping</h3>
+<table class="checklist">
+<tr><th>Marker ID</th><th>Action</th><th>Notes</th></tr>
+<tr><td>0</td><td>Zero torque</td><td>All motors off. Robot collapses. Use only when on the floor.</td></tr>
+<tr><td>1</td><td>Damping</td><td>Safe compliant rest. Scan this first before any other action.</td></tr>
+<tr><td>2</td><td>Locked standing (FSM 500)</td><td>Stand-up sequence, ~8 seconds. Required before gestures. 15-second cooldown.</td></tr>
+<tr><td>3</td><td>Walking/running mode</td><td>Sends --start then --switch_move_mode=true (R2+A equivalent). Robot walks freely from locked standing.</td></tr>
+<tr><td>4</td><td>Wave above head</td><td>Built-in arm action. Requires FSM 500.</td></tr>
+<tr><td>5</td><td>Blow kiss</td><td>Built-in arm action. Requires FSM 500.</td></tr>
+<tr><td>6</td><td>Shake hand</td><td>Built-in arm action. Requires FSM 500.</td></tr>
+<tr><td>7</td><td>Both hands up</td><td>Built-in arm action. Requires FSM 500.</td></tr>
+<tr><td>8</td><td>Right hand on heart</td><td>Built-in arm action. Requires FSM 500.</td></tr>
+<tr><td>9</td><td>Ultraman ray</td><td>Built-in arm action. Requires FSM 500.</td></tr>
+</table>
+<h3>Demonstration sequence</h3>
+<ol>
+<li>Scan marker 1 — confirm damping.</li>
+<li>Scan marker 2 — robot stands up and locks (~8 seconds).</li>
+<li>Scan markers 4–9 one at a time to demonstrate each gesture.</li>
+<li>Scan marker 3 to enable walking mode if needed.</li>
+<li>Scan marker 1 to return to damping before finishing.</li>
+</ol>
+<div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>Marker 0 collapses the robot instantly. Never show it while the robot is standing.</li>
+<li>Marker 2 has a 15-second cooldown to prevent re-triggering during the stand-up sequence.</li>
+<li>The browser stream may go dark for about 3 seconds during the marker 2 sequence and recovers automatically.</li>
+<li>The monitor at /home/unitree/start_g1_scanner.sh restarts the scanner within seconds if it exits. It clears port 8080 before restarting. Commands already sent still execute on the robot.</li>
+</ul></div>
+<div class="transition"><strong>Suggested transition:</strong> "The G1 is now fully controlled by printed ArUco markers. Let us look at possible future improvements."</div>
+</section><section class="module" id="m18"><h2>18 — Future Improvements</h2>
+<p class="goal"><strong>Video goal:</strong> Close the course by explaining realistic next steps.</p>
+<h3>Read this on camera</h3>
+<p class="narration">The current course establishes the complete beginner pipeline: camera frames, ArUco detection, marker IDs, Python behavior mapping, and robot-specific commands.</p>
+<p class="narration">Possible future improvements include pose estimation, which can estimate marker position and orientation relative to the camera.</p>
+<p class="narration">A user interface could show the active robot state, last detected marker, cooldown time, and connection status.</p>
+<p class="narration">Better logging could record detections, actions, failures, and recovery events.</p>
+<p class="narration">Multi-marker missions could use a sequence of marker IDs instead of a single immediate command.</p>
+<p class="narration">The same reusable vision layer can also be adapted to additional robots by connecting their camera source and mapping their command interface.</p>
+<h3>What to show on screen</h3><ol>
+<li>Display a roadmap slide.</li>
+<li>Show examples of logging output or a simple UI mockup if available.</li>
+<li>End on the repository page and course completion summary.</li>
+</ol>
+<div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>Keep future features clearly labeled as future work, not current course functionality.</li>
+</ul></div>
+<div class="transition"><strong>Suggested transition:</strong> “Now that this part is working, we can move to the next layer of the project.”</div>
+</section>
+<section class="module" id="m19"><h2>19 — Go2 Deployment Paths: AP Mode vs Jetson/PC2</h2>
+<p class="goal"><strong>Video goal:</strong> Explain the difference between running the project from an Ubuntu laptop over the Go2 hotspot and running an onboard version through the Go2 Jetson/PC2.</p>
+<h3>Read this on camera</h3>
+<p class="narration">The Go2 portion of this project can be approached in two different ways.</p>
+<p class="narration">The first method is the laptop workflow. The Ubuntu laptop connects to the Go2 hotspot, the Python script runs on the laptop, WebRTC provides the camera stream, and the same WebRTC connection sends high-level commands back to the robot.</p>
+<p class="narration">The second method is the onboard workflow. The laptop connects to the Go2 with an Ethernet cable, we use SSH to enter the onboard NVIDIA Jetson or PC2, and the custom program interacts with the BotBrain ROS 2 system running on the robot.</p>
+<p class="narration">These are not simply two network addresses for the same program. The laptop path uses the existing WebRTC scripts. The onboard path uses ROS 2 topics, controller messages, and BotBrain command routing.</p>
+<p class="narration">The laptop AP-mode path is the fully working camera and ArUco workflow. The onboard path is the Jetson onboard deployment section of the course.</p>
+<h3>What to show on screen</h3>
+<ol>
+<li>Display a two-column diagram labeled Laptop/AP Mode and Onboard Jetson/PC2 Mode.</li>
+<li>Show the Go2 hotspot connection and the address <code>192.168.12.1</code>.</li>
+<li>Show the physical Ethernet connection used for the Jetson workflow.</li>
+<li>Explain that students should complete the laptop path before attempting onboard deployment.</li>
+</ol>
+<h3>Connection overview</h3>
+<pre>Laptop/AP mode:
+Ubuntu laptop → Go2 hotspot → WebRTC camera and commands → Go2
+
+Hardwired onboard mode:
+Ubuntu laptop → Ethernet → SSH → Go2 Jetson/PC2 → BotBrain ROS 2 → Go2</pre>
+<div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>Do not imply that the original WebRTC script can be copied into BotBrain unchanged.</li>
+<li>Do not operate the laptop WebRTC controller and onboard ROS autonomy at the same time unless their interaction has been tested.</li>
+</ul></div>
+<div class="transition"><strong>Suggested transition:</strong> “Now that we understand the two deployment paths, we can connect directly to the onboard computer.”</div>
+</section>
+<section class="module" id="m20"><h2>20 — Hardwired Network and SSH into the Go2</h2>
+<p class="goal"><strong>Video goal:</strong> Configure the Ubuntu laptop Ethernet interface, verify the Go2 internal network, and SSH into the onboard Jetson/PC2.</p><div class="module-flow-note">Recording flow: read the left panel, run the matching command(s) on the right, verify the result, then continue downward.</div>
+<div class="recording-grid"><div class="say-panel"><div class="recording-cue">Say this while recording</div><h3>On-camera script</h3><p class="narration">For the onboard workflow, connect the Ubuntu laptop to the Go2 internal network with an Ethernet cable.</p><p class="narration">Ubuntu may detect the adapter without assigning the address required by the Go2 network, so we first identify the interface name.</p><p class="narration">On the development laptop, the USB Ethernet interface was named enx9c69d34c7599. Your interface name may be different.</p><p class="narration">We create a persistent NetworkManager profile named unitree-wired and assign the laptop the address 192.168.123.222 with a 24-bit subnet.</p><p class="narration">The development Go2 Jetson was reachable at 192.168.123.170. After confirming it responds to ping, we connect with SSH using the unitree account.</p></div><div class="run-panel"><div class="recording-cue">Copy and run beside the narration</div><h3>Terminal commands</h3><div class="code-title">Identify the Ethernet interface</div><div class="codebox"><button onclick="copyCode('c17', this)">Copy</button><pre id="c17">ip -br link
+ip -4 -br addr</pre></div><div class="code-title">Create the persistent wired profile</div><div class="codebox"><button onclick="copyCode('c18', this)">Copy</button><pre id="c18">sudo nmcli connection add \
+  type ethernet \
+  ifname enx9c69d34c7599 \
+  con-name unitree-wired \
+  ipv4.method manual \
+  ipv4.addresses 192.168.123.222/24 \
+  ipv4.never-default yes \
+  ipv6.method disabled</pre></div><div class="code-title">Activate or reconnect the profile</div><div class="codebox"><button onclick="copyCode('c19', this)">Copy</button><pre id="c19">sudo nmcli connection up unitree-wired</pre></div><div class="code-title">Verify the laptop address and route</div><div class="codebox"><button onclick="copyCode('c20', this)">Copy</button><pre id="c20">ip -4 -br addr show enx9c69d34c7599
+ip route show dev enx9c69d34c7599</pre></div><div class="code-title">Test and open the SSH connection</div><div class="codebox"><button onclick="copyCode('c21', this)">Copy</button><pre id="c21">ping -c 4 192.168.123.170
+ssh unitree@192.168.123.170</pre></div></div></div><h3>What to show on screen</h3>
+<ol>
+<li>Connect the Ethernet cable.</li>
+<li>Identify the adapter using <code>ip -br link</code> and <code>ip -4 -br addr</code>.</li>
+<li>Create and activate the wired profile.</li>
+<li>Ping the Jetson address.</li>
+<li>SSH into the Jetson and point out the prompt change.</li>
+</ol>
+<h3>Expected result</h3>
+<ul>
+<li>The laptop interface shows <code>192.168.123.222/24</code>.</li>
+<li>A route exists for <code>192.168.123.0/24</code>.</li>
+<li>The Go2 Jetson responds at <code>192.168.123.170</code>.</li>
+<li>The remote prompt appears similar to <code>unitree@ubuntu:~$</code>.</li>
+</ul>
+<div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>Replace the interface name when the student's adapter differs.</li>
+<li>Do not replace the laptop's normal Wi-Fi default route; <code>ipv4.never-default yes</code> keeps this profile limited to the Go2 network.</li>
+<li>IP addresses may differ on another Go2 and should be verified before recording.</li>
+</ul></div>
+<div class="transition"><strong>Suggested transition:</strong> “Now that we are logged into the robot computer, we can download the full project onto it.”</div>
+</section>
+<section class="module" id="m21"><h2>21 — Download the Repository onto the Jetson/PC2</h2>
+<p class="goal"><strong>Video goal:</strong> Clone or update the full GitHub repository directly on the onboard Go2 computer and inspect the onboard environment.</p><div class="module-flow-note">Recording flow: read the left panel, run the matching command(s) on the right, verify the result, then continue downward.</div>
+<div class="recording-grid"><div class="say-panel"><div class="recording-cue">Say this while recording</div><h3>On-camera script</h3><p class="narration">We are now running commands on the Go2 Jetson host.</p><p class="narration">Download the same course repository onto the onboard computer so it has its own copy of the Go2 scripts, G1 scripts, marker files, documentation, and WebRTC package.</p><p class="narration">The development Jetson uses Ubuntu 20.04, Python 3.8, an NVIDIA Tegra kernel, and Docker containers for BotBrain.</p><p class="narration">We clone the repository on the Jetson host. We do not clone it into the BotBrain container because containers may be replaced or recreated.</p><p class="narration">After cloning, the autonomous script is deployed to /home/unitree/go2_aruco_autonomous.py. A monitor wrapper script at /home/unitree/go2_patrol_monitor.sh handles automatic restart and controller-triggered kill. A cron @reboot job starts the monitor 20 seconds after boot, giving the robot network and BotBrain services time to finish starting.</p><p class="narration">Once the cron job is in place, the monitor and script start automatically every time the Go2 is powered on. After about 30 seconds from power-on, open a browser to the Go2's hotspot address and port 8080 to see the live camera stream and control panel.</p></div><div class="run-panel"><div class="recording-cue">Copy and run beside the narration</div><h3>Terminal commands</h3><div class="code-title">Inspect the Jetson host</div><div class="codebox"><button onclick="copyCode('c22', this)">Copy</button><pre id="c22">uname -a
+python3 --version
+df -h ~
+free -h
+sudo docker ps</pre></div><div class="code-title">Clone the course repository onto the Go2</div><div class="codebox"><button onclick="copyCode('c23', this)">Copy</button><pre id="c23">cd ~
+git clone https://github.com/TroyKaravias/unitree_robots_aruco_opencv.git
+cd unitree_robots_aruco_opencv
+ls</pre></div><div class="code-title">Update an existing onboard clone</div><div class="codebox"><button onclick="copyCode('c24', this)">Copy</button><pre id="c24">cd ~/unitree_robots_aruco_opencv
+git pull</pre></div><div class="code-title">Deploy the script to the home directory</div><div class="codebox"><button onclick="copyCode('c24b', this)">Copy</button><pre id="c24b">cp ~/unitree_robots_aruco_opencv/scripts/go2/go2_aruco_autonomous.py ~/go2_aruco_autonomous.py
+ls -lh ~/go2_aruco_autonomous.py</pre></div><div class="code-title">Set up the cron @reboot auto-start job</div><div class="codebox"><button onclick="copyCode('c24c', this)">Copy</button><pre id="c24c">(crontab -l 2>/dev/null; echo "@reboot sleep 20 && bash /home/unitree/go2_patrol_monitor.sh >> /tmp/patrol.log 2>&1") | crontab -
+crontab -l</pre></div><div class="code-title">Open the web control UI in a browser (after boot)</div><div class="codebox"><button onclick="copyCode('c24d', this)">Copy</button><pre id="c24d"># Via Go2 hotspot (most common):
+http://192.168.12.1:8080/
+
+# Via Ethernet (wired connection):
+http://192.168.123.170:8080/</pre></div><div class="code-title">Check if the script is running and view the log</div><div class="codebox"><button onclick="copyCode('c24e', this)">Copy</button><pre id="c24e">pgrep -a -f go2_aruco_autonomous.py
+grep -v 'swscaler\|h264\|no frame\|decode_slice\|non-existing\|PPS' /tmp/patrol.log</pre></div></div></div><h3>What to show on screen</h3>
+<ol>
+<li>Confirm that the prompt is <code>unitree@ubuntu:~$</code>.</li>
+<li>Run the system-information checks.</li>
+<li>Clone the GitHub repository.</li>
+<li>List the repository folders.</li>
+<li>Show the active BotBrain containers.</li>
+</ol>
+<h3>Expected result</h3>
+<ul>
+<li>The repository exists at <code>~/unitree_robots_aruco_opencv</code> on the Jetson host.</li>
+<li>The folders <code>scripts</code>, <code>aruco_markers</code>, <code>unitree_webrtc_connect</code>, and course documentation are visible.</li>
+<li>The BotBrain Docker containers include a container named <code>bringup</code>.</li>
+</ul>
+<div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>The existing laptop WebRTC scripts are the working implementation.</li>
+<li>Downloading the repository onto the Jetson does not automatically make the WebRTC scripts BotBrain ROS nodes.</li>
+<li>Keep custom files outside generated install directories and avoid modifying factory BotBrain files until the integration path is understood.</li>
+</ul></div>
+<div class="transition"><strong>Suggested transition:</strong> “The project is now stored onboard, so our next step is to enter BotBrain and inspect the robot's ROS 2 interfaces.”</div>
+</section>
+<section class="module" id="m22"><h2>22 — BotBrain ROS 2, Controller Input, and Autonomy Controls</h2>
+<p class="goal"><strong>Video goal:</strong> Enter the BotBrain bringup container, source ROS 2 Humble, inspect command routing, and explain the verified autonomy controller combinations.</p><div class="module-flow-note">Recording flow: read the left panel, run the matching command(s) on the right, verify the result, then continue downward.</div>
+<div class="recording-grid"><div class="say-panel"><div class="recording-cue">Say this while recording</div><h3>On-camera script</h3><p class="narration">BotBrain runs its ROS 2 environment inside Docker.</p><p class="narration">From the Jetson host, enter the bringup container and source the installed BotBrain workspace.</p><p class="narration">The controller publishes a Unitree WirelessController message on the wirelesscontroller topic.</p><p class="narration">The verified key mask for L1 plus Y is 2050, and the verified mask for L2 plus Y is 2080. These are the planned BotBrain ROS 2 integration keybinds.</p><p class="narration">The deployed onboard WebRTC script reads the controller via rosbridge at localhost port 9090. The confirmed working keybinds are: D-pad Down plus A (bitmask 16640) to start autonomous patrol, D-pad Down plus B (bitmask 16896) to stop it, D-pad Down plus X (bitmask 17408) to kill and immediately restart the script via the monitor, and D-pad Down plus Y (bitmask 18432) to kill the script and block auto-restart until X is pressed again.</p><p class="narration">Our intended BotBrain behavior is L1 plus Y to enable autonomous search and L2 plus Y to disable it.</p><p class="narration">Disabling autonomy must only stop the custom velocity command and return control to normal manual walking. It must not call Damp, Sit, StandDown, or another posture command.</p><p class="narration">BotBrain routes multiple velocity sources through twist_mux. Manual joystick control has priority 100. The candidate custom autonomy input, cmd_vel_nipple, has priority 99, so normal manual control remains one priority level higher.</p></div><div class="run-panel"><div class="recording-cue">Copy and run beside the narration</div><h3>Terminal commands</h3><div class="code-title">Enter BotBrain</div><div class="codebox"><button onclick="copyCode('c25', this)">Copy</button><pre id="c25">sudo docker exec -it bringup bash
+source /botbrain_ws/install/setup.bash</pre></div><div class="code-title">Confirm ROS 2 and available topics</div><div class="codebox"><button onclick="copyCode('c26', this)">Copy</button><pre id="c26">printenv ROS_DISTRO
+which ros2
+ros2 topic list</pre></div><div class="code-title">Inspect the controller message</div><div class="codebox"><button onclick="copyCode('c27', this)">Copy</button><pre id="c27">ros2 topic info /wirelesscontroller
+ros2 interface show unitree_go/msg/WirelessController</pre></div><div class="code-title">Inspect BotBrain velocity routing</div><div class="codebox"><button onclick="copyCode('c28', this)">Copy</button><pre id="c28">ros2 node info /go2/twist_mux
+ros2 param dump /go2/twist_mux</pre></div></div></div><h3>What to show on screen</h3>
+<ol>
+<li>Enter the <code>bringup</code> container.</li>
+<li>Source the BotBrain workspace and show <code>ROS_DISTRO=humble</code>.</li>
+<li>Inspect <code>/wirelesscontroller</code>.</li>
+<li>Inspect <code>/go2/twist_mux</code> and show its priorities.</li>
+<li>Show the controller-only toggle test before testing motion.</li>
+</ol>
+<h3>Confirmed working controller keybinds (via rosbridge)</h3>
+<table class="checklist">
+<tr><th>Combo</th><th>Bitmask</th><th>Action</th></tr>
+<tr><td>D-pad Down + A</td><td>16640 (0x4100)</td><td>Start autonomous patrol</td></tr>
+<tr><td>D-pad Down + B</td><td>16896 (0x4200)</td><td>Stop patrol (standby)</td></tr>
+<tr><td>D-pad Down + X</td><td>17408 (0x4400)</td><td>Kill script; monitor auto-restarts it in 5 s</td></tr>
+<tr><td>D-pad Down + Y</td><td>18432 (0x4800)</td><td>Kill script; monitor waits — press X again to restart</td></tr>
+</table>
+<h3>Planned BotBrain ROS 2 keybinds (future)</h3>
+<table class="checklist">
+<tr><th>Item</th><th>Value</th></tr>
+<tr><td>L1 mask</td><td>2</td></tr>
+<tr><td>L2 mask</td><td>32</td></tr>
+<tr><td>Y mask</td><td>2048</td></tr>
+<tr><td>L1 + Y</td><td>2050 — enable autonomy (planned)</td></tr>
+<tr><td>L2 + Y</td><td>2080 — disable autonomy (planned)</td></tr>
+<tr><td>Manual joystick priority</td><td>100</td></tr>
+<tr><td>Custom autonomy candidate priority</td><td>99 on <code>/go2/cmd_vel_nipple</code></td></tr>
+<tr><td>Dead-man lock priority</td><td>200</td></tr>
+</table>
+<div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>Autonomy must always start disabled.</li>
+<li>L2 + Y must take priority over enable logic and immediately stop custom velocity output.</li>
+<li>Stopping custom autonomy is not the same as damping the robot.</li>
+<li>Before changing motion code, verify the custom input, mux output, dead-man state, and whether a higher-priority source is publishing continuously.</li>
+</ul></div>
+<div class="transition"><strong>Suggested transition:</strong> “With controller input and command routing identified, the final advanced step is a headless service and a UI that share the same safe control logic.”</div>
+</section>
+<section class="module" id="m23"><h2>23 — Headless Operation, UI Plan, and Safe Startup</h2>
+<p class="goal"><strong>Video goal:</strong> Explain the final onboard architecture, current camera limitation, planned UI, and the safety requirements before automatic startup.</p><div class="module-flow-note">Recording flow: read the left panel, run the matching command(s) on the right, verify the result, then continue downward.</div>
+<div class="recording-grid"><div class="say-panel"><div class="recording-cue">Say this while recording</div><h3>On-camera script</h3><p class="narration">The final onboard version should run without requiring an OpenCV desktop window or an open SSH terminal.</p><p class="narration">The autonomy node should publish its enabled state, current behavior state, last detected marker, status messages, and an optional debug image.</p><p class="narration">A web or desktop UI can subscribe to the same status information and provide engage, stop, and emergency-stop controls.</p><p class="narration">The controller and UI should not implement separate movement systems. Both should call the same enable and disable logic inside the autonomy node.</p><p class="narration">The current expected ROS camera topic is go2 front camera color image raw. During development, the topic existed but reported zero publishers, so the onboard camera integration is not yet complete.</p><p class="narration">The AP-mode WebRTC workflow is the complete working ArUco demonstration.</p><p class="narration">Automatic startup should be added only after camera input, detection, controller disable, zero-velocity shutdown, and manual override have all been validated repeatedly.</p></div><div class="run-panel"><div class="recording-cue">Copy and run beside the narration</div><h3>Terminal commands</h3><div class="code-title">Check the current onboard camera topic</div><div class="codebox"><button onclick="copyCode('c29', this)">Copy</button><pre id="c29">ros2 topic info /go2/front_camera/color/image_raw
+ros2 topic hz /go2/front_camera/color/image_raw</pre></div><div class="code-title">Inspect the custom movement path during testing</div><div class="codebox"><button onclick="copyCode('c30', this)">Copy</button><pre id="c30">ros2 topic echo /go2/cmd_vel_nipple
+ros2 topic echo /go2/cmd_vel_out</pre></div></div></div><h3>What to show on screen</h3>
+<ol>
+<li>Show a simple architecture diagram for controller, UI, autonomy node, camera, and twist_mux.</li>
+<li>Inspect the current camera topic.</li>
+<li>Show a UI mockup or the experimental dashboard file.</li>
+<li>Demonstrate that the program starts disabled.</li>
+<li>Explain the shutdown and manual-override behavior before discussing automatic startup.</li>
+</ol>
+<h3>Planned status and UI interfaces</h3>
+<pre>/aruco/autonomy_enabled   std_msgs/msg/Bool
+/aruco/state              std_msgs/msg/String
+/aruco/last_marker        std_msgs/msg/Int32
+/aruco/status             std_msgs/msg/String
+/aruco/debug_image        sensor_msgs/msg/Image
+
+Controller L1 + Y ─┐
+                   ├─→ shared enable_autonomy() logic
+UI Engage button ──┘
+
+Controller L2 + Y ─┐
+                   ├─→ shared disable_autonomy() logic → zero custom velocity
+UI Stop button ────┘</pre>
+<div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>Do not create a startup service while the camera has no publisher or the motion path is still being diagnosed.</li>
+<li>Do not let the UI publish velocity directly; it should request state changes through the autonomy node.</li>
+<li>On shutdown, the node must stop its command timer and publish zero custom velocity.</li>
+<li>Marker ID 0 should remain an additional visual stop condition in the final autonomous implementation.</li>
+</ul></div>
+<div class="transition"><strong>Suggested transition:</strong> “This completes the full course roadmap: the laptop WebRTC path and the onboard ROS 2 deployment path.”</div>
+</section>
+<h2>Closing statement</h2>
+<p class="narration">"You now have the full structure for a Unitree ArUco and OpenCV project: generating markers, detecting them from robot camera frames, confirming IDs, applying cooldowns, mapping IDs to actions, and separating reusable computer vision from robot-specific control code. The Go2 laptop WebRTC path is the fully demonstrated implementation. The Go2 onboard path runs the same autonomous script on the Jetson, auto-starting on boot via cron, and serving a live web control UI at port 8080. The G1 path is a complete working implementation: V4L2 camera feed, browser-based MJPEG stream, DICT_4X4_50 detection with confirmation and cooldowns, and ten marker-controlled actions covering locomotion state transitions and built-in arm gestures."</p>
+</div>
+<script>
+function copyCode(id, btn) {
+  const text = document.getElementById(id).innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    const old = btn.innerText;
+    btn.innerText = "Copied";
+    setTimeout(() => btn.innerText = old, 1000);
+  });
+}
+</script>
+</body>
+</html>
