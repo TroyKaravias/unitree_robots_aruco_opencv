@@ -157,15 +157,19 @@ pip install opencv-contrib-python numpy</pre></div>
 <!-- PART 4 -->
 <section class="section" id="s4">
 <h2>Part 4 &mdash; Print your ArUco markers</h2>
-<p>All markers use <strong>DICT_4X4_50</strong>. You need markers <strong>0&ndash;9</strong> for the full G1 demo and <strong>0&ndash;8</strong> for the Go2 demo.</p>
+<p>All markers use <strong>DICT_4X4_50</strong>. You need markers <strong>0&ndash;8</strong> for both the Go2 and G1 demos. The marker image files are already included in the repository you cloned in Part 2 &mdash; no script required.</p>
 
 <div class="step">
-<div class="step-num">Step 1 &mdash; Generate print-ready sheets for all 10 markers</div>
+<div class="step-num">Step 1 &mdash; Open the marker images from the repo</div>
+<p>In your file manager or browser, open the <code>aruco_markers/</code> folder inside the cloned repository:</p>
 <div class="codebox"><button onclick="copyCode('c06',this)">Copy</button>
-<pre id="c06">for i in 0 1 2 3 4 5 6 7 8 9; do
-  python3 scripts/generate_printable_marker.py --id $i --size-in 5.5 --dpi 300
-done</pre></div>
-<p>Files land in <code>aruco_markers/printables/</code>. Open each <code>_letter.html</code> in Chrome and print with <strong>Scale = 100% (Actual Size)</strong>.</p>
+<pre id="c06">ls aruco_markers/</pre></div>
+<p>You will see <code>aruco_4x4_50_id_0.png</code> through <code>aruco_4x4_50_id_8.png</code>. Open each PNG in your image viewer or browser and print it.</p>
+</div>
+
+<div class="step">
+<div class="step-num">Step 2 &mdash; Print each marker</div>
+<p>Open each <code>.png</code> file in Chrome or your system image viewer and print with <strong>Scale = 100% (Actual Size)</strong>. Each marker should be at least 10&nbsp;cm &times; 10&nbsp;cm on the printed page.</p>
 </div>
 
 <div class="warn">&#9888; <strong>Print tips:</strong> Use card stock if available. Black and white is fine. Keep a white border around each marker &mdash; do not crop the edges. Hold markers flat and steady when testing.</div>
@@ -531,7 +535,7 @@ Then stop and restart the monitor (see Part 10).
 
 <!-- PART 9 -->
 <section class="section" id="s9">
-<h2>Part 9 &mdash; G1: all 10 marker actions</h2>
+<h2>Part 9 &mdash; G1: all 9 marker actions</h2>
 
 <h3>How confirmation works</h3>
 <p>The scanner uses <strong>DICT_4X4_50</strong> and requires a marker to appear in <strong>3 consecutive frames</strong> before the action fires. Hold the marker flat and steady. Watch the count in the browser overlay &mdash; e.g. <code>ID 1&nbsp;&nbsp;(2/3)</code>. On frame 3 the action fires and a cooldown starts.</p>
@@ -548,7 +552,6 @@ Then stop and restart the monitor (see Part 10).
   <tr><td><strong>6</strong></td><td>Shake hand</td><td>4 sec</td><td>Arm action 27. Requires FSM 500.</td></tr>
   <tr><td><strong>7</strong></td><td>Both hands up</td><td>4 sec</td><td>Arm action 15. Requires FSM 500.</td></tr>
   <tr><td><strong>8</strong></td><td>Right hand on heart</td><td>4 sec</td><td>Arm action 33. Requires FSM 500.</td></tr>
-  <tr><td><strong>9</strong></td><td>Ultraman ray</td><td>4 sec</td><td>Arm action 24. Requires FSM 500.</td></tr>
 </table>
 
 <h3>&#10003; Recommended demonstration sequence</h3>
@@ -556,7 +559,7 @@ Then stop and restart the monitor (see Part 10).
 <ol>
   <li><strong>Scan marker 1</strong> &mdash; damping. Watch the log confirm &ldquo;Damping&rdquo;.</li>
   <li><strong>Scan marker 2</strong> &mdash; robot stands up (~10&ndash;12 seconds). 15-second cooldown prevents re-triggering. Browser may go dark briefly and recover.</li></li>
-  <li><strong>Scan markers 4&ndash;9</strong> one at a time &mdash; arm gestures. Wait for each to finish before the next.</li>
+  <li><strong>Scan markers 4&ndash;8</strong> one at a time &mdash; arm gestures. Wait for each to finish before the next.</li>
   <li><strong>Scan marker 3</strong> &mdash; enables walking/running mode (sends --switch_move_mode=true, R2+A equivalent).</li>
   <li><strong>Scan marker 1</strong> &mdash; return to damping before finishing. Always end here.</li>
 </ol>
@@ -574,7 +577,7 @@ Then stop and restart the monitor (see Part 10).
 
 <div class="warn">
 &#9888; <strong>Never show marker 0 while the robot is standing.</strong> It cuts all motor torque with no warning.<br><br>
-&#9888; <strong>Gestures (markers 4&ndash;9) require FSM 500 (locked standing).</strong> If the robot is in damping, gestures do nothing. Scan marker 2 first.<br><br>
+&#9888; <strong>Gestures (markers 4&ndash;8) require FSM 500 (locked standing).</strong> If the robot is in damping, gestures do nothing. Scan marker 2 first.<br><br>
 &#9888; <strong>Cooldowns:</strong> Holding the marker during a cooldown does nothing. Just wait. Marker 2 = 15 seconds. All others = 4 seconds.
 </div>
 </section>
@@ -597,7 +600,7 @@ Then stop and restart the monitor (see Part 10).
   <tr><td>Can&apos;t ping 192.168.123.164</td><td>Confirm your laptop is on the 192.168.123.x subnet and the Jetson has power.</td></tr>
   <tr><td>Browser stream does not open</td><td>Wait 10 seconds and refresh. Verify with the port-check command below.</td></tr>
   <tr><td>Stream opens but camera is black</td><td>RealSense ROS node is still releasing the camera. Wait 5 seconds and refresh.</td></tr>
-  <tr><td>Gestures do nothing (markers 4&ndash;9)</td><td>Robot must be in FSM 500. Scan marker 1 then marker 2 first.</td></tr>
+  <tr><td>Gestures do nothing (markers 4&ndash;8)</td><td>Robot must be in FSM 500. Scan marker 1 then marker 2 first.</td></tr>
   <tr><td>Marker 2 sequence fails / robot sits back down</td><td>Scan marker 1, wait 3 seconds, then scan marker 2 again.</td></tr>
   <tr><td>Browser goes dark briefly</td><td>Normal during the marker 2 sequence. The monitor restarts the scanner within 3 seconds.</td></tr>
   <tr><td>Scanner not responding to markers</td><td>Check the log (command below). Monitor auto-restarts on crash.</td></tr>

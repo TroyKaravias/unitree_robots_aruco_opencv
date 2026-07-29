@@ -126,7 +126,7 @@ to the onboard NVIDIA Jetson/PC2 through SSH and the BotBrain ROS 2 environment.
 <tr><td>The BotBrain <code>bringup</code> container is running</td><td>□</td></tr>
 <tr><td>G1 Jetson is reachable at 192.168.123.164</td><td>□</td></tr>
 <tr><td>G1 scanner monitor is started and http://192.168.123.164:8080/ shows the live stream</td><td>□</td></tr>
-<tr><td>Markers 0–9 are printed and readable for G1 demonstration</td><td>□</td></tr>
+<tr><td>Markers 0&ndash;8 are printed and readable for G1 demonstration</td><td>□</td></tr>
 <tr><td>G1 robot is in damping mode before recording any action demonstration</td><td>□</td></tr>
 <tr><td>Onboard autonomy begins disabled and L2 + Y stops custom motion without entering Damp mode</td><td>□</td></tr>
 </table>
@@ -252,7 +252,7 @@ PY</pre>
 <div class="transition"><strong>Suggested transition:</strong> “Now that this part is working, we can move to the next layer of the project.”</div>
 </section><section class="module" id="m3"><h2>03 — ArUco Dictionaries and Marker IDs</h2>
 <p class="goal"><strong>Video goal:</strong> Explain DICT_4X4_50 and why the generator and detector must use the same dictionary.</p><div class="module-flow-note">Recording flow: read the left panel, run the matching command(s) on the right, verify the result, then continue downward.</div>
-<div class="recording-grid"><div class="say-panel"><div class="recording-cue">Say this while recording</div><h3>On-camera script</h3><p class="narration">ArUco markers are organized into dictionaries.</p><p class="narration">A dictionary defines the marker grid size and the collection of valid marker patterns.</p><p class="narration">For this course, we use OpenCV's DICT_4X4_50 dictionary.</p><p class="narration">The 4X4 portion means the internal marker pattern uses a four-by-four binary grid.</p><p class="narration">The 50 means the dictionary contains marker IDs from zero through forty-nine.</p><p class="narration">The complete course generates IDs zero through nine; the Go2 and G1 lessons use different subsets of those markers.</p><p class="narration">The marker generator and the marker detector must use the same dictionary. If we generate a marker from one dictionary and try to detect it with another, detection may fail.</p></div><div class="run-panel"><div class="recording-cue">Copy and run beside the narration</div><h3>Terminal commands</h3><div class="code-title">Quick dictionary test</div><div class="codebox">
+<div class="recording-grid"><div class="say-panel"><div class="recording-cue">Say this while recording</div><h3>On-camera script</h3><p class="narration">ArUco markers are organized into dictionaries.</p><p class="narration">A dictionary defines the marker grid size and the collection of valid marker patterns.</p><p class="narration">For this course, we use OpenCV's DICT_4X4_50 dictionary.</p><p class="narration">The 4X4 portion means the internal marker pattern uses a four-by-four binary grid.</p><p class="narration">The 50 means the dictionary contains marker IDs from zero through forty-nine.</p><p class="narration">The complete course uses IDs zero through eight; the Go2 and G1 lessons use different subsets of those markers.</p><p class="narration">The marker generator and the marker detector must use the same dictionary. If we generate a marker from one dictionary and try to detect it with another, detection may fail.</p></div><div class="run-panel"><div class="recording-cue">Copy and run beside the narration</div><h3>Terminal commands</h3><div class="code-title">Quick dictionary test</div><div class="codebox">
 <button onclick="copyCode('c1', this)">Copy</button>
 <pre id="c1">python3 - &lt;&lt;'PY'
 import cv2
@@ -273,28 +273,17 @@ PY</pre>
 <li>Note that the aruco_markers output folder will be populated in the next module when we run the generator.</li>
 </ol>
 </section><section class="module" id="m4"><h2>04 — Creating and Printing ArUco Markers</h2>
-<p class="goal"><strong>Video goal:</strong> Generate marker images for IDs 0–4 and explain practical printing considerations.</p><div class="module-flow-note">Recording flow: read the left panel, run the matching command(s) on the right, verify the result, then continue downward.</div>
-<div class="recording-grid"><div class="say-panel"><div class="recording-cue">Say this while recording</div><h3>On-camera script</h3><p class="narration">Now we will generate the actual marker image files used in the course.</p><p class="narration">The repository includes a marker generation script.</p><p class="narration">When we run it, the script creates print-ready files for marker IDs zero through nine and saves them in aruco_markers/printables.</p><p class="narration">After generation, we should verify that all five files exist.</p><p class="narration">For reliable detection, print the markers with the full black border visible, avoid stretching them, and keep some white space around each marker.</p><p class="narration">Glossy reflections, very small print sizes, motion blur, and extreme angles can reduce detection reliability.</p></div><div class="run-panel"><div class="recording-cue">Copy and run beside the narration</div><h3>Terminal commands</h3><div class="code-title">Generate markers</div><div class="codebox">
+<p class="goal"><strong>Video goal:</strong> Show the marker PNG files already in the repo and explain practical printing considerations.</p><div class="module-flow-note">Recording flow: read the left panel, run the matching command(s) on the right, verify the result, then continue downward.</div>
+<div class="recording-grid"><div class="say-panel"><div class="recording-cue">Say this while recording</div><h3>On-camera script</h3><p class="narration">The repository already includes the marker image files students need. No script needs to be run.</p><p class="narration">Inside the aruco_markers folder you will find PNG files for marker IDs zero through eight.</p><p class="narration">Students simply open these files in a browser or image viewer and print them. They should print at actual size — 100% scale — so the marker is not stretched or shrunk.</p><p class="narration">For reliable detection, print the markers with the full black border visible, avoid stretching them, and keep some white space around each marker.</p><p class="narration">Glossy reflections, very small print sizes, motion blur, and extreme angles can reduce detection reliability.</p></div><div class="run-panel"><div class="recording-cue">Copy and run beside the narration</div><h3>Terminal commands</h3><div class="code-title">List the marker files already in the repo</div><div class="codebox">
 <button onclick="copyCode('c2', this)">Copy</button>
-<pre id="c2">for i in 0 1 2 3 4 5 6 7 8 9; do
-  python3 scripts/generate_printable_marker.py --id "$i" --size-in 5.5 --dpi 300
-done
-ls aruco_markers/printables</pre>
-</div><div class="code-title">List generated files</div><div class="codebox">
-<button onclick="copyCode('c3', this)">Copy</button>
-<pre id="c3">ls aruco_markers/printables</pre>
+<pre id="c2">ls aruco_markers/</pre>
 </div></div></div><h3>What to show on screen</h3><ol>
-<li>Run the generator.</li>
-<li>Open the aruco_markers folder.</li>
-<li>Open each image briefly.</li>
+<li>Open the aruco_markers folder and show the PNG files.</li>
+<li>Open one PNG in a browser at full size.</li>
 <li>Show a correctly printed marker and an example with the border cropped.</li>
 </ol>
 <h3>Expected result</h3><ul>
-<li>aruco_4x4_50_id_0.png</li>
-<li>aruco_4x4_50_id_1.png</li>
-<li>aruco_4x4_50_id_2.png</li>
-<li>aruco_4x4_50_id_3.png</li>
-<li>aruco_4x4_50_id_4.png</li>
+<li>aruco_4x4_50_id_0.png through aruco_4x4_50_id_8.png are present.</li>
 </ul>
 <div class="warning"><h3>Instructor and safety notes</h3><ul>
 <li>Keep the filenames visible long enough for students to compare their output.</li>
@@ -552,7 +541,7 @@ tail -5 /tmp/g1_camera.log</pre>
 <p class="narration">The left panel shows the live MJPEG stream from the RealSense camera. When a marker enters the frame, OpenCV draws its border and displays the marker ID and confirmation count above it.</p>
 <p class="narration">The scanner uses DICT_4X4_50 and requires a marker to appear in three consecutive frames before it is confirmed. Once confirmed, the mapped action fires and a four-second cooldown begins. The same marker cannot trigger again until the cooldown expires. Marker 2 uses a fifteen-second cooldown to prevent re-triggering during the stand-up sequence.</p>
 <p class="narration">The right panel is the scan log. It shows real-time status: which markers are visible, which action is executing, and the running frame count.</p>
-<p class="narration">During this phase, show markers zero through nine one at a time. The scanner detects all of them, but action results depend on the robot state covered in the next module.</p>
+<p class="narration">During this phase, show markers zero through eight one at a time. The scanner detects all of them, but action results depend on the robot state covered in the next module.</p>
 <h3>What to show on screen</h3><ol>
 <li>Open http://192.168.123.164:8080/ in a browser.</li>
 <li>Show the left camera panel with the detection overlay drawn on a marker.</li>
@@ -570,15 +559,15 @@ tail -5 /tmp/g1_camera.log</pre>
 <li>Marker 0 triggers zero torque and the robot collapses. Keep it away from the camera while the robot is standing.</li>
 <li>Marker 2 starts the stand-up sequence. Do not show it again while the robot is rising.</li>
 </ul></div>
-<div class="transition"><strong>Suggested transition:</strong> "Detection is working. Now we connect all ten marker IDs to their robot actions."</div>
+<div class="transition"><strong>Suggested transition:</strong> "Detection is working. Now we connect all nine marker IDs to their robot actions."</div>
 </section><section class="module" id="m17"><h2>17 — G1 Marker-Controlled Actions</h2>
 <p class="goal"><strong>Video goal:</strong> Demonstrate the complete G1 marker-to-action mapping and the correct workflow from rest through standing to gestures.</p>
 <h3>Read this on camera</h3>
-<p class="narration">The G1 has ten mapped marker IDs, zero through nine.</p>
+<p class="narration">The G1 has nine mapped marker IDs, zero through eight.</p>
 <p class="narration">Markers zero and one are safety controls. Marker zero cuts all motor torque and the robot collapses. Use it only when the robot is already on the floor. Marker one enables damping mode, the safe compliant resting state. Always scan marker one first before any other action.</p>
 <p class="narration">Marker two is the stand-up sequence. It sends stand-up to bring the robot to FSM state 4, waits up to ten seconds for the robot to physically rise, then sends start to transition to FSM 500, locked standing. The full sequence takes about twelve seconds. The browser stream may restart briefly during this transition and recover automatically.</p>
 <p class="narration">Marker three enables walking and running mode from locked standing. It sends --start first to ensure FSM 500, then calls --switch_move_mode=true, which is the software equivalent of pressing R2+A on the physical controller. The robot then walks freely.</p>
-<p class="narration">Markers four through nine trigger built-in arm gestures using the Unitree arm action binary. These require the robot to be in locked standing mode, FSM 500. Scan marker two first to reach that state.</p>
+<p class="narration">Markers four through eight trigger built-in arm gestures using the Unitree arm action binary. These require the robot to be in locked standing mode, FSM 500. Scan marker two first to reach that state.</p>
 <h3>What to show on screen</h3><ol>
 <li>Show the marker table before starting any live demonstration.</li>
 <li>Start with the robot resting. Scan marker 1 to confirm damping.</li>
@@ -598,13 +587,12 @@ tail -5 /tmp/g1_camera.log</pre>
 <tr><td>6</td><td>Shake hand</td><td>Built-in arm action. Requires FSM 500.</td></tr>
 <tr><td>7</td><td>Both hands up</td><td>Built-in arm action. Requires FSM 500.</td></tr>
 <tr><td>8</td><td>Right hand on heart</td><td>Built-in arm action. Requires FSM 500.</td></tr>
-<tr><td>9</td><td>Ultraman ray</td><td>Built-in arm action. Requires FSM 500.</td></tr>
 </table>
 <h3>Demonstration sequence</h3>
 <ol>
 <li>Scan marker 1 — confirm damping.</li>
 <li>Scan marker 2 — robot stands up and locks (~8 seconds).</li>
-<li>Scan markers 4–9 one at a time to demonstrate each gesture.</li>
+<li>Scan markers 4&ndash;8 one at a time to demonstrate each gesture.</li>
 <li>Scan marker 3 to enable walking mode if needed.</li>
 <li>Scan marker 1 to return to damping before finishing.</li>
 </ol>
