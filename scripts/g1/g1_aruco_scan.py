@@ -32,7 +32,7 @@ logging.basicConfig(level=logging.FATAL)
 # Override this from terminal with:
 #   export UNITREE_ROBOT_IP=192.168.12.1
 ROBOT_IP = os.environ.get("UNITREE_ROBOT_IP", "192.168.12.1")
-AES_128_KEY = os.environ.get("UNITREE_AES_128_KEY")
+AES_128_KEY: str = os.environ.get("UNITREE_AES_128_KEY", "")
 
 # ArUco settings
 aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
