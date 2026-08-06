@@ -132,7 +132,7 @@ to the onboard NVIDIA Jetson/PC2 through SSH and the BotBrain ROS 2 environment.
 </table>
 <h2>Course modules</h2>
 <ol class="toc">
-<li><a href="#m0">00 — Course Overview</a></li><li><a href="#m1">01 — What Is an ArUco Marker?</a></li><li><a href="#m2">02 — ArUco Dictionaries and Marker IDs</a></li><li><a href="#m3">03 — Creating and Printing ArUco Markers</a></li><li><a href="#m4">04 — What Is OpenCV?</a></li><li><a href="#m5">05 — Student Setup and GitHub Repository</a></li><li><a href="#m6">06 — Go2 Camera and WebRTC Setup</a></li><li><a href="#m7">07 — First Go2 ArUco Scanner</a></li><li><a href="#m8">08 — Marker-Controlled Go2 Actions</a></li><li><a href="#m9">09 — Marker Confirmation and Cooldowns</a></li><li><a href="#m10">10 — Go2 Patrol Behavior</a></li><li><a href="#m11">11 — Go2 Built-In Obstacle Avoidance</a></li><li><a href="#m12">12 — Stronger Go2 Corner Recovery</a></li><li><a href="#m13">13 — Full Go2 Autonomous ArUco Demo</a></li><li><a href="#m14">14 — G1 Adaptation Overview</a></li><li><a href="#m15">15 — G1 Connection and Starting the Scanner</a></li><li><a href="#m16">16 — G1 ArUco Scanner and Browser Stream</a></li><li><a href="#m17">17 — G1 Marker-Controlled Actions</a></li><li><a href="#m18">18 — Future Improvements</a></li>
+<li><a href="#m0">00 — Course Overview</a></li><li><a href="#m1">01 — What Is an ArUco Marker?</a></li><li><a href="#m2">02 — ArUco Dictionaries and Marker IDs</a></li><li><a href="#m3">03 — Creating and Printing ArUco Markers</a></li><li><a href="#m4">04 — What Is OpenCV?</a></li><li><a href="#m5">05 — Student Setup and GitHub Repository</a></li><li><a href="#m6">06 — Go2 Camera and WebRTC Setup</a></li><li><a href="#m7">07 — First Go2 ArUco Scanner</a></li><li><a href="#m8">08 — Marker-Controlled Go2 Actions</a></li><li><a href="#m9">09 — Marker Confirmation and Cooldowns</a></li><li><a href="#m10">10 — Go2 Patrol Behavior</a></li><li><a href="#m11">11 — Go2 Built-In Obstacle Avoidance</a></li><li><a href="#m12">12 — Stronger Go2 Corner Recovery</a></li><li><a href="#m13">13 — Full Go2 Autonomous ArUco Demo</a></li><li><a href="#m14">14 — G1 Adaptation Overview</a></li><li><a href="#m15">15 — G1 Deploy, Connect, and Start the Scanner</a></li><li><a href="#m16">16 — G1 ArUco Scanner and Browser Stream</a></li><li><a href="#m17">17 — G1 Marker-Controlled Actions</a></li><li><a href="#m18">18 — Future Improvements</a></li>
 <li><a href="#m19">19 — Go2 Deployment Paths: AP Mode vs Jetson/PC2</a></li>
 <li><a href="#m20">20 — Hardwired Network and SSH into the Go2</a></li>
 <li><a href="#m21">21 — Download the Repository onto the Jetson/PC2</a></li>
@@ -495,9 +495,131 @@ source venv/bin/activate</pre>
 <li>A realsense2_camera_node ROS process starts automatically on the Jetson at boot and holds the camera device. The scanner script detects and kills it automatically on startup.</li>
 </ul></div>
 <div class="transition"><strong>Suggested transition:</strong> "Now that we understand the G1 architecture, we can connect and start the scanner."</div>
-</section><section class="module" id="m15"><h2>15 — G1 Connection and Starting the Scanner</h2>
-<p class="goal"><strong>Video goal:</strong> SSH into the G1 Jetson, start the scanner monitor, and confirm the live browser stream.</p><div class="module-flow-note">Recording flow: read the left panel, run the matching command(s) on the right, verify the result, then continue downward.</div>
-<div class="recording-grid"><div class="say-panel"><div class="recording-cue">Say this while recording</div><h3>On-camera script</h3><p class="narration">The G1 Jetson NX is reachable at 192.168.123.164. The username is unitree and the password is 123.</p><p class="narration">Before starting the scanner, confirm the Jetson is reachable with ping.</p><p class="narration">The scanner script is already deployed on the Jetson at /home/unitree/g1_camera_view.py. A monitor script at /home/unitree/start_g1_scanner.sh wraps it in an automatic restart loop so the stream recovers on its own if the process exits. It also auto-detects the camera device at startup, trying /dev/video4, /dev/video5, /dev/video3, and /dev/video2 in order — no manual device configuration needed.</p><p class="narration">The monitor script is set up as a cron @reboot job on the G1 Jetson, so the scanner starts automatically on every boot. Start it manually with nohup if needed, and it continues running after the SSH session closes. After a few seconds, open a browser on any device on the same network and navigate to http://192.168.123.164:8080/. The left panel shows the live camera feed with ArUco detection overlay. The right panel shows the scan log.</p><p class="narration">On a cold boot, the monitor clears port 8080 and auto-detects the first available camera device. No manual intervention is needed.</p></div><div class="run-panel"><div class="recording-cue">Copy and run beside the narration</div><h3>Terminal commands</h3><div class="code-title">Verify the Jetson is reachable</div><div class="codebox">
+</section><section class="module" id="m15"><h2>15 — G1 Deploy, Connect, and Start the Scanner</h2>
+<p class="goal"><strong>Video goal:</strong> Deploy the scanner and monitor scripts onto the G1 Jetson, SSH in, start the scanner monitor, and confirm the live browser stream.</p><div class="module-flow-note">Recording flow: read the left panel, run the matching command(s) on the right, verify the result, then continue downward.</div>
+
+<h3>Prerequisites — Network connection to the G1</h3>
+<div class="recording-grid"><div class="say-panel"><div class="recording-cue">Say this while recording</div><h3>On-camera script</h3>
+<p class="narration">Before deploying anything, the laptop must be on the same network as the G1 Jetson. The G1 uses a wired Ethernet connection — plug the Ethernet cable from the G1 into your laptop or into the same switch. The Jetson is at 192.168.123.164, so your laptop needs a static IP on the 192.168.123.x subnet (for example 192.168.123.100, subnet mask 255.255.255.0).</p>
+<p class="narration">Once the cable is connected and the network profile is set, confirm the Jetson is reachable with ping before going any further. A successful ping means the physical connection and subnet are correct.</p>
+</div><div class="run-panel"><div class="recording-cue">Copy and run beside the narration</div><h3>Terminal commands</h3>
+<div class="code-title">Confirm your laptop IP is on the 192.168.123.x subnet</div><div class="codebox">
+<button onclick="copyCode('cg-pre1', this)">Copy</button>
+<pre id="cg-pre1">ip addr show | grep "192.168.123"</pre>
+</div>
+<div class="code-title">Ping the G1 Jetson</div><div class="codebox">
+<button onclick="copyCode('cg-pre2', this)">Copy</button>
+<pre id="cg-pre2">ping -c 4 192.168.123.164</pre>
+</div>
+</div></div>
+<h3>What to show on screen</h3><ol>
+<li>Show the Ethernet cable plugged in.</li>
+<li>Show the static IP configured in the network settings (192.168.123.x).</li>
+<li>Run ip addr and show the 192.168.123.x address on the wired interface.</li>
+<li>Run ping and show replies from 192.168.123.164.</li>
+</ol>
+<h3>Expected result</h3><ul>
+<li>ip addr shows a 192.168.123.x address on the wired interface.</li>
+<li>ping receives replies from 192.168.123.164 with no packet loss.</li>
+</ul>
+<div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>If ping fails, check the cable, confirm the Jetson is powered on, and verify the laptop's static IP is on the 192.168.123.x subnet — not DHCP.</li>
+<li>Wi-Fi alone will not reach the G1 Jetson. A wired connection is required.</li>
+</ul></div>
+
+<h3>Part A — Deploy the scanner to the Jetson</h3>
+<div class="recording-grid"><div class="say-panel"><div class="recording-cue">Say this while recording</div><h3>On-camera script</h3>
+<p class="narration">With the network confirmed, we can deploy the scanner. Before we can run the G1 scanner, we need to copy the script from the laptop to the G1 Jetson NX. The Jetson is at 192.168.123.164, username unitree, password 123.</p>
+<p class="narration">We use scp to copy the scanner script directly from the repo on your laptop to the Jetson home directory. Run this from your laptop — not inside an SSH session — and make sure you are in the repo root.</p>
+<p class="narration">Once the script is on the Jetson, SSH in and verify that Python 3 and OpenCV with ArUco support are available.</p>
+<p class="narration">Next, create the monitor script on the Jetson. The monitor wraps the scanner in an infinite restart loop so the stream recovers automatically if the process exits. It also auto-detects the camera device at startup, trying /dev/video4, /dev/video5, /dev/video3, and /dev/video2 in order.</p>
+<p class="narration">After creating the monitor script, verify the SDK binaries needed for robot commands are in place, then set up a cron @reboot job so the scanner starts automatically on every boot.</p>
+</div><div class="run-panel"><div class="recording-cue">Copy and run beside the narration</div><h3>Terminal commands</h3>
+<div class="code-title">Copy the scanner script from your laptop to the Jetson (run from repo root on laptop)</div><div class="codebox">
+<button onclick="copyCode('cg-d1', this)">Copy</button>
+<pre id="cg-d1">scp scripts/g1/g1_camera_view.py unitree@192.168.123.164:/home/unitree/g1_camera_view.py
+# password: 123</pre>
+</div>
+<div class="code-title">SSH into the G1 Jetson</div><div class="codebox">
+<button onclick="copyCode('cg-d2', this)">Copy</button>
+<pre id="cg-d2">ssh unitree@192.168.123.164
+# password: 123</pre>
+</div>
+<div class="code-title">Verify Python 3 and OpenCV/ArUco (run on Jetson)</div><div class="codebox">
+<button onclick="copyCode('cg-d3', this)">Copy</button>
+<pre id="cg-d3">python3 --version
+python3 -c "import cv2; print('OpenCV:', cv2.__version__); cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50); print('ArUco OK')"</pre>
+</div>
+<div class="code-title">Create the monitor script (run on Jetson)</div><div class="codebox">
+<button onclick="copyCode('cg-d4', this)">Copy</button>
+<pre id="cg-d4">cat &gt; /home/unitree/start_g1_scanner.sh &lt;&lt; 'MONEOF'
+#!/bin/bash
+trap '' SIGTERM
+while true; do
+  fuser -k 8080/tcp 2&gt;/dev/null || true
+  DEVICE=""
+  for d in /dev/video4 /dev/video5 /dev/video3 /dev/video2; do
+    if [ -e "$d" ]; then
+      DEVICE="$d"
+      break
+    fi
+  done
+  if [ -z "$DEVICE" ]; then
+    echo "$(date): No camera device found, retrying in 10s" &gt;&gt; /tmp/g1_camera.log
+    sleep 10
+    continue
+  fi
+  echo "$(date): Starting scanner on $DEVICE" &gt;&gt; /tmp/g1_camera.log
+  python3 -u /home/unitree/g1_camera_view.py --headless --stream-port 8080 --device $DEVICE &gt;&gt; /tmp/g1_camera.log 2&gt;&amp;1
+  echo "$(date): Scanner exited, restarting in 3s" &gt;&gt; /tmp/g1_camera.log
+  sleep 3
+done
+MONEOF
+chmod +x /home/unitree/start_g1_scanner.sh</pre>
+</div>
+<div class="code-title">Verify the monitor script was created correctly</div><div class="codebox">
+<button onclick="copyCode('cg-d5', this)">Copy</button>
+<pre id="cg-d5">cat /home/unitree/start_g1_scanner.sh</pre>
+</div>
+<div class="code-title">Verify the SDK binaries are in place</div><div class="codebox">
+<button onclick="copyCode('cg-d6', this)">Copy</button>
+<pre id="cg-d6">ls -lh /home/unitree/unitree_sdk2-main/build/bin/g1_loco_client
+ls -lh /home/unitree/unitree_sdk2-main/build/bin/g1_arm_action_example
+ls /home/unitree/cyclonedds_no_shm.xml</pre>
+</div>
+<div class="code-title">Set up cron @reboot auto-start (verify or add)</div><div class="codebox">
+<button onclick="copyCode('cg-d7', this)">Copy</button>
+<pre id="cg-d7">crontab -l
+# If the @reboot line is missing, add it:
+(crontab -l 2&gt;/dev/null; echo "@reboot /home/unitree/start_g1_scanner.sh &gt;&gt; /tmp/g1_camera.log 2&gt;&amp;1") | crontab -</pre>
+</div>
+<div class="code-title">Exit the SSH session</div><div class="codebox">
+<button onclick="copyCode('cg-d8', this)">Copy</button>
+<pre id="cg-d8">exit</pre>
+</div>
+</div></div>
+<h3>What to show on screen</h3><ol>
+<li>Run the scp command from the laptop and show the transfer summary line.</li>
+<li>SSH in and show the Jetson prompt.</li>
+<li>Run the Python/OpenCV check and show "ArUco OK".</li>
+<li>Paste the monitor script creation command and verify with cat.</li>
+<li>Show all three SDK binary ls checks passing.</li>
+<li>Show the crontab -l output with the @reboot line present.</li>
+</ol>
+<h3>Expected result</h3><ul>
+<li>scp prints a transfer summary (file size and speed).</li>
+<li>Python 3.x and "ArUco OK" with no errors.</li>
+<li>cat of start_g1_scanner.sh ends with the "done" line.</li>
+<li>All three SDK files exist (g1_loco_client, g1_arm_action_example, cyclonedds_no_shm.xml).</li>
+<li>crontab -l shows the @reboot line.</li>
+</ul>
+<div class="warning"><h3>Instructor and safety notes</h3><ul>
+<li>If OpenCV is missing on the Jetson: <code>pip3 install opencv-contrib-python numpy</code></li>
+<li>If any SDK binary is missing, the script was not compiled — check with your instructor before continuing.</li>
+</ul></div>
+
+<h3>Part B — Connect and start the scanner</h3>
+<div class="recording-grid"><div class="say-panel"><div class="recording-cue">Say this while recording</div><h3>On-camera script</h3><p class="narration">With the scanner and monitor now deployed on the Jetson, we are ready to start the stream. Confirm the Jetson is still reachable with a quick ping.</p><p class="narration">The scanner script is at /home/unitree/g1_camera_view.py and the monitor script is at /home/unitree/start_g1_scanner.sh. The monitor wraps the scanner in an automatic restart loop so the stream recovers on its own if the process exits. It auto-detects the camera device at startup — no manual device configuration needed.</p><p class="narration">Because the cron @reboot job is set up, the scanner starts automatically on every boot. To start it manually, run the nohup command below. It continues running after the SSH session closes. After a few seconds, open a browser on any device on the same network and navigate to http://192.168.123.164:8080/. The left panel shows the live camera feed with ArUco detection overlay. The right panel shows the scan log.</p><p class="narration">On a cold boot, the monitor clears port 8080 and auto-detects the first available camera device. No manual intervention is needed.</p></div><div class="run-panel"><div class="recording-cue">Copy and run beside the narration</div><h3>Terminal commands</h3><div class="code-title">Verify the Jetson is reachable</div><div class="codebox">
 <button onclick="copyCode('cg1', this)">Copy</button>
 <pre id="cg1">ping -c 4 192.168.123.164</pre>
 </div><div class="code-title">SSH into the G1 Jetson</div><div class="codebox">
